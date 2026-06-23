@@ -1,0 +1,1170 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Daniel Runner">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%230f172a'/><text y='.9em' font-size='80' x='50%' text-anchor='middle'>🏃</text></svg>">
+<title>Daniel Runner</title>
+
+<!-- PWA Manifest inline -->
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22Daniel%20Runner%22%2C%22short_name%22%3A%22Runner%22%2C%22description%22%3A%22Pla%20d%27entrenament%20i%20dieta%20per%20a%20Daniel%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%230f172a%22%2C%22theme_color%22%3A%22%230f172a%22%2C%22orientation%22%3A%22portrait%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%20192%20192'%3E%3Crect%20width%3D'192'%20height%3D'192'%20rx%3D'40'%20fill%3D'%230f172a'%2F%3E%3Ctext%20y%3D'.9em'%20font-size%3D'150'%20x%3D'50%25'%20text-anchor%3D'middle'%3E%F0%9F%8F%83%3C%2Ftext%3E%3C%2Fsvg%3E%22%2C%22sizes%22%3A%22192x192%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D">
+
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+
+<style>
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0f172a;
+  --bg2: #1e293b;
+  --bg3: #334155;
+  --card: #1e293b;
+  --border: #334155;
+  --text: #f1f5f9;
+  --text2: #94a3b8;
+  --green: #22c55e;
+  --orange: #f97316;
+  --blue: #3b82f6;
+  --red: #ef4444;
+  --purple: #a855f7;
+  --yellow: #eab308;
+  --nav-h: 68px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+html { height: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+h1,h2,h3,h4 { font-weight: 700; }
+button { cursor: pointer; font-family: inherit; }
+input, select, textarea { font-family: inherit; }
+
+/* ===== LAYOUT ===== */
+#app { display: flex; flex-direction: column; min-height: 100vh; }
+.page { display: none; flex: 1; overflow-y: auto; padding: 16px 16px calc(var(--nav-h) + var(--safe-bottom) + 16px); }
+.page.active { display: block; }
+
+/* ===== NAV ===== */
+nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  display: flex;
+  height: calc(var(--nav-h) + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
+  z-index: 100;
+}
+.nav-btn {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 3px;
+  background: none; border: none; color: var(--text2);
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.5px; padding: 8px 4px; transition: color .2s;
+}
+.nav-btn .icon { font-size: 22px; line-height: 1; }
+.nav-btn.active { color: var(--green); }
+
+/* ===== CARDS ===== */
+.card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 16px; margin-bottom: 14px;
+}
+.card-title {
+  font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--text2); margin-bottom: 12px; font-weight: 600;
+}
+
+/* ===== BADGES ===== */
+.badge {
+  display: inline-block; padding: 3px 10px; border-radius: 20px;
+  font-size: 12px; font-weight: 700; text-transform: uppercase;
+}
+.badge-green { background: #22c55e22; color: var(--green); border: 1px solid #22c55e44; }
+.badge-orange { background: #f9731622; color: var(--orange); border: 1px solid #f9731644; }
+.badge-blue { background: #3b82f622; color: var(--blue); border: 1px solid #3b82f644; }
+.badge-red { background: #ef444422; color: var(--red); border: 1px solid #ef444444; }
+.badge-purple { background: #a855f722; color: var(--purple); border: 1px solid #a855f744; }
+.badge-yellow { background: #eab30822; color: var(--yellow); border: 1px solid #eab30844; }
+
+/* ===== COUNTDOWN CARDS ===== */
+.countdown-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+.countdown-card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 14px 12px; text-align: center;
+}
+.countdown-card .race-name { font-size: 11px; color: var(--text2); font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
+.countdown-card .days { font-size: 42px; font-weight: 800; line-height: 1; color: var(--green); }
+.countdown-card .days.urgent { color: var(--orange); }
+.countdown-card .days-label { font-size: 11px; color: var(--text2); margin-top: 2px; }
+.countdown-card .race-date { font-size: 11px; color: var(--blue); margin-top: 6px; font-weight: 600; }
+.countdown-card .race-dist { font-size: 13px; font-weight: 700; color: var(--text); }
+
+/* ===== MACRO BAR ===== */
+.macro-row { display: flex; gap: 8px; margin-bottom: 10px; }
+.macro-pill {
+  flex: 1; background: var(--bg3); border-radius: 12px;
+  padding: 10px 8px; text-align: center;
+}
+.macro-pill .val { font-size: 20px; font-weight: 800; }
+.macro-pill .lbl { font-size: 10px; color: var(--text2); font-weight: 600; text-transform: uppercase; }
+.macro-pill .unit { font-size: 10px; color: var(--text2); }
+.bar-wrap { background: var(--bg3); border-radius: 4px; height: 8px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; transition: width .5s; }
+
+/* ===== MEALS LIST ===== */
+.meal-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+.meal-item:last-child { border-bottom: none; }
+.meal-time { font-size: 12px; color: var(--blue); font-weight: 700; min-width: 38px; }
+.meal-info { flex: 1; }
+.meal-name { font-size: 14px; font-weight: 600; }
+.meal-desc { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.meal-kcal { font-size: 14px; font-weight: 700; color: var(--orange); min-width: 50px; text-align: right; }
+
+/* ===== DAY SELECTOR ===== */
+.day-selector { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 14px; scrollbar-width: none; }
+.day-selector::-webkit-scrollbar { display: none; }
+.day-btn {
+  flex-shrink: 0; display: flex; flex-direction: column; align-items: center;
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 12px;
+  padding: 8px 12px; min-width: 52px; transition: all .2s;
+  color: var(--text2); font-size: 11px; font-weight: 600;
+}
+.day-btn .day-num { font-size: 20px; font-weight: 800; color: var(--text); }
+.day-btn.active { background: var(--green); border-color: var(--green); color: #fff; }
+.day-btn.active .day-num { color: #fff; }
+.day-btn.trampa { border-color: var(--orange); }
+.day-btn.carrega { border-color: var(--purple); }
+.day-btn.cursa { border-color: var(--red); }
+.day-btn.diumenge { border-color: var(--blue); }
+
+/* ===== CALENDAR ===== */
+.cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.cal-nav-btn {
+  background: var(--bg3); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--text); padding: 6px 12px; font-size: 16px;
+}
+.cal-month-title { font-size: 18px; font-weight: 700; }
+.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 4px; }
+.cal-day-label { text-align: center; font-size: 10px; color: var(--text2); font-weight: 700; padding: 4px; }
+.cal-day {
+  aspect-ratio: 1; display: flex; align-items: center; justify-content: center;
+  border-radius: 10px; font-size: 13px; font-weight: 600; position: relative;
+  cursor: default;
+}
+.cal-day.empty { background: none; }
+.cal-day.normal { background: var(--bg3); color: var(--text2); }
+.cal-day.trampa { background: #f9731622; color: var(--orange); border: 2px solid var(--orange); }
+.cal-day.carrega { background: #a855f722; color: var(--purple); border: 2px solid var(--purple); }
+.cal-day.cursa { background: #ef444422; color: var(--red); border: 2px solid var(--red); }
+.cal-day.diumenge { background: #3b82f611; color: var(--blue); }
+.cal-day.today { box-shadow: 0 0 0 2px var(--green); }
+.cal-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.cal-legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); }
+.cal-legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+
+/* ===== FORM ===== */
+.form-group { margin-bottom: 12px; }
+.form-group label { display: block; font-size: 12px; color: var(--text2); font-weight: 600; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
+.form-control {
+  width: 100%; background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 10px; padding: 10px 12px; color: var(--text); font-size: 15px;
+}
+.form-control:focus { outline: none; border-color: var(--blue); }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 12px 20px; border-radius: 12px; font-weight: 700; font-size: 15px;
+  border: none; transition: all .2s; width: 100%;
+}
+.btn-green { background: var(--green); color: #fff; }
+.btn-green:active { background: #16a34a; }
+.btn-red { background: var(--red); color: #fff; font-size: 12px; padding: 6px 10px; width: auto; border-radius: 8px; }
+
+/* ===== TABLE ===== */
+.data-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.data-table th { text-align: left; color: var(--text2); font-size: 11px; text-transform: uppercase; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+.data-table td { padding: 10px 8px; border-bottom: 1px solid var(--border); }
+.data-table tr:last-child td { border-bottom: none; }
+
+/* ===== CHARTS ===== */
+.chart-wrap { position: relative; width: 100%; }
+.chart-wrap canvas { max-width: 100%; }
+
+/* ===== PROGRESS BARS ===== */
+.progress-section { margin-bottom: 16px; }
+.progress-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.progress-label span:first-child { font-size: 13px; font-weight: 600; }
+.progress-label span:last-child { font-size: 12px; color: var(--text2); }
+.progress-bar { background: var(--bg3); border-radius: 6px; height: 10px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 6px; transition: width 1s; }
+
+/* ===== STATS GRID ===== */
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.stat-box { background: var(--bg3); border-radius: 12px; padding: 12px; text-align: center; }
+.stat-box .val { font-size: 24px; font-weight: 800; }
+.stat-box .lbl { font-size: 11px; color: var(--text2); font-weight: 600; text-transform: uppercase; margin-top: 2px; }
+.stat-box .change { font-size: 12px; font-weight: 600; margin-top: 4px; }
+.change-pos { color: var(--red); }
+.change-neg { color: var(--green); }
+
+/* ===== DAY TYPE BANNER ===== */
+.day-type-banner {
+  border-radius: 12px; padding: 10px 14px;
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 14px;
+}
+.day-type-banner .icon { font-size: 24px; }
+.day-type-banner .info { flex: 1; }
+.day-type-banner .title { font-size: 14px; font-weight: 700; }
+.day-type-banner .sub { font-size: 12px; opacity: 0.8; margin-top: 2px; }
+
+/* ===== SECTION HEADER ===== */
+.section-header { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+.section-sub { font-size: 13px; color: var(--text2); margin-bottom: 16px; }
+
+/* ===== SCROLLABLE TABS ===== */
+.tab-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 16px; scrollbar-width: none; }
+.tab-scroll::-webkit-scrollbar { display: none; }
+.tab-pill {
+  flex-shrink: 0; padding: 7px 16px; border-radius: 20px; font-size: 13px;
+  font-weight: 600; background: var(--bg3); border: 1px solid var(--border);
+  color: var(--text2); transition: all .2s;
+}
+.tab-pill.active { background: var(--green); color: #fff; border-color: var(--green); }
+
+/* ===== INSTALL BANNER ===== */
+#installBanner {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  background: var(--green); color: #fff;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; font-size: 13px; font-weight: 600;
+  transform: translateY(-100%); transition: transform .3s;
+}
+#installBanner.show { transform: translateY(0); }
+#installBanner button { background: #fff; color: var(--green); border: none; border-radius: 8px; padding: 6px 12px; font-weight: 700; font-size: 13px; }
+
+/* ===== TOAST ===== */
+#toast {
+  position: fixed; bottom: calc(var(--nav-h) + var(--safe-bottom) + 12px); left: 50%;
+  transform: translateX(-50%) translateY(20px); background: var(--bg2);
+  border: 1px solid var(--border); border-radius: 12px; padding: 10px 18px;
+  font-size: 14px; font-weight: 600; opacity: 0; transition: all .3s; z-index: 150;
+  white-space: nowrap; pointer-events: none;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ===== RESPONSIVE ===== */
+@media (min-width: 600px) {
+  .page { padding: 24px 24px calc(var(--nav-h) + 24px); max-width: 600px; margin: 0 auto; }
+  .countdown-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="installBanner">
+    📲 Instal·la l'app al teu iPhone!
+    <button id="installBtn">Instal·lar</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="section-header">Hola, Daniel 🏃</div>
+    <div class="section-sub" id="dashDate"></div>
+
+    <!-- Countdowns -->
+    <div class="card-title">PROPERES CURSES</div>
+    <div class="countdown-grid">
+      <div class="countdown-card">
+        <div class="race-name">Tast de la Mitja</div>
+        <div class="race-dist">10 km</div>
+        <div class="days" id="cd1Days">—</div>
+        <div class="days-label">dies</div>
+        <div class="race-date">📍 La Garriga · 31/10/2026</div>
+      </div>
+      <div class="countdown-card">
+        <div class="race-name">Mitja Marató</div>
+        <div class="race-dist">21,1 km</div>
+        <div class="days" id="cd2Days">—</div>
+        <div class="days-label">dies</div>
+        <div class="race-date">📍 Granollers · 24/01/2027</div>
+      </div>
+    </div>
+
+    <!-- Day type -->
+    <div class="day-type-banner" id="dayTypeBanner"></div>
+
+    <!-- Today macros -->
+    <div class="card">
+      <div class="card-title">MACROS D'AVUI</div>
+      <div class="macro-row" id="dashMacros"></div>
+      <div id="dashBars"></div>
+    </div>
+
+    <!-- Body stats -->
+    <div class="card">
+      <div class="card-title">ESTAT CORPORAL</div>
+      <div class="stats-grid" id="bodyStats"></div>
+    </div>
+
+    <!-- Quick meal -->
+    <div class="card">
+      <div class="card-title">ÀPATS D'AVUI</div>
+      <div id="dashMeals"></div>
+    </div>
+  </div>
+
+  <!-- DIETA -->
+  <div class="page" id="page-diet">
+    <div class="section-header">Pla Nutricional</div>
+    <div class="section-sub">Menú setmanal complet</div>
+    <div class="day-selector" id="dietDaySelector"></div>
+    <div id="dietDayType"></div>
+    <div class="card" id="dietMacroCard"></div>
+    <div class="card" id="dietMealsCard"></div>
+  </div>
+
+  <!-- CALENDARI -->
+  <div class="page" id="page-calendar">
+    <div class="section-header">Calendari</div>
+    <div class="section-sub">Preparació fins a les curses</div>
+    <div class="card" id="calendarCard">
+      <div class="cal-header">
+        <button class="cal-nav-btn" onclick="calPrev()">‹</button>
+        <div class="cal-month-title" id="calTitle"></div>
+        <button class="cal-nav-btn" onclick="calNext()">›</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-legend">
+        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#22c55e"></div>Avui</div>
+        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#ef4444"></div>Cursa</div>
+        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#a855f7"></div>Càrrega CH</div>
+        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#f97316"></div>Dia trampa</div>
+        <div class="cal-legend-item"><div class="cal-legend-dot" style="background:#3b82f6"></div>Descans</div>
+      </div>
+    </div>
+    <div class="card" id="calEventInfo" style="display:none"></div>
+  </div>
+
+  <!-- REGISTRE -->
+  <div class="page" id="page-registro">
+    <div class="section-header">Registre Corporal</div>
+    <div class="section-sub">Seguiment del teu progrés</div>
+
+    <div class="card">
+      <div class="card-title">NOVA ENTRADA</div>
+      <div class="form-row">
+        <div class="form-group"><label>Data</label><input type="date" class="form-control" id="regDate"></div>
+        <div class="form-group"><label>Pes (kg)</label><input type="number" step="0.1" class="form-control" id="regPes" placeholder="100.0"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label>% Greix</label><input type="number" step="0.1" class="form-control" id="regGreix" placeholder="32.9"></div>
+        <div class="form-group"><label>Greix Visceral</label><input type="number" step="0.1" class="form-control" id="regVisceral" placeholder="14"></div>
+      </div>
+      <div class="form-group"><label>Nota (opcional)</label><input type="text" class="form-control" id="regNota" placeholder="Sensació, training..."></div>
+      <button class="btn btn-green" onclick="saveRegistre()">💾 Desar entrada</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">HISTORIAL</div>
+      <div style="overflow-x:auto">
+        <table class="data-table" id="registreTable">
+          <thead><tr><th>Data</th><th>Pes</th><th>% Greix</th><th>Visceral</th><th></th></tr></thead>
+          <tbody id="registreTbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- GRÀFIQUES -->
+  <div class="page" id="page-charts">
+    <div class="section-header">Gràfiques</div>
+    <div class="section-sub">Evolució i objectius</div>
+
+    <div class="tab-scroll" id="chartTabs">
+      <button class="tab-pill active" onclick="showChart('pes',this)">Pes</button>
+      <button class="tab-pill" onclick="showChart('greig',this)">% Greix</button>
+      <button class="tab-pill" onclick="showChart('visceral',this)">Visceral</button>
+      <button class="tab-pill" onclick="showChart('macros',this)">Macros</button>
+    </div>
+
+    <div class="card" id="chartPes">
+      <div class="card-title">PES CORPORAL (kg)</div>
+      <div class="chart-wrap"><canvas id="cPes" height="220"></canvas></div>
+      <div class="progress-section" style="margin-top:14px">
+        <div class="progress-label"><span>Objectiu: 88 kg</span><span id="pesProgress">—</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="pesProgressBar" style="background:var(--green);width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="card" id="chartGreig" style="display:none">
+      <div class="card-title">% GREIX CORPORAL</div>
+      <div class="chart-wrap"><canvas id="cGreig" height="220"></canvas></div>
+      <div class="progress-section" style="margin-top:14px">
+        <div class="progress-label"><span>Objectiu: &lt;22%</span><span id="greigProgress">—</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="greigProgressBar" style="background:var(--orange);width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="card" id="chartVisceral" style="display:none">
+      <div class="card-title">GREIX VISCERAL</div>
+      <div class="chart-wrap"><canvas id="cVisceral" height="220"></canvas></div>
+      <div class="progress-section" style="margin-top:14px">
+        <div class="progress-label"><span>Objectiu: &lt;9</span><span id="visceralProgress">—</span></div>
+        <div class="progress-bar"><div class="progress-fill" id="visceralProgressBar" style="background:var(--red);width:0%"></div></div>
+      </div>
+    </div>
+
+    <div class="card" id="chartMacros" style="display:none">
+      <div class="card-title">MACROS D'AVUI (donut)</div>
+      <div class="chart-wrap" style="max-width:280px;margin:0 auto"><canvas id="cMacros" height="280"></canvas></div>
+      <div style="display:flex;justify-content:center;gap:16px;margin-top:12px;flex-wrap:wrap" id="macrosLegend"></div>
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <nav>
+    <button class="nav-btn active" onclick="goPage('dashboard',this)">
+      <span class="icon">🏠</span>Dashboard
+    </button>
+    <button class="nav-btn" onclick="goPage('diet',this)">
+      <span class="icon">🥗</span>Dieta
+    </button>
+    <button class="nav-btn" onclick="goPage('calendar',this)">
+      <span class="icon">📅</span>Calendari
+    </button>
+    <button class="nav-btn" onclick="goPage('registro',this)">
+      <span class="icon">⚖️</span>Registre
+    </button>
+    <button class="nav-btn" onclick="goPage('charts',this)">
+      <span class="icon">📊</span>Gràfiques
+    </button>
+  </nav>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const RACE1 = new Date('2026-10-31');
+const RACE2 = new Date('2027-01-24');
+
+// CH load days (3 days before each race)
+const CARREGA_DAYS = ['2026-10-28','2026-10-29','2026-10-30','2027-01-21','2027-01-22','2027-01-23'];
+const CURSA_DAYS   = ['2026-10-31','2027-01-24'];
+
+// Macros per day type
+const MACROS = {
+  normal:  { kcal:2200, prot:185, ch:215, greix:65 },
+  trampa:  { kcal:2600, prot:185, ch:240, greix:80 },
+  diumenge:{ kcal:1900, prot:170, ch:190, greix:58 },
+  carrega: { kcal:2800, prot:185, ch:340, greix:65 },
+  cursa:   { kcal:3200, prot:190, ch:380, greix:70 },
+};
+
+// Weekly meal plan (Mon–Sun)
+const MEAL_PLAN = {
+  // DILLUNS - Normal 2200 kcal
+  1: {
+    type:'normal', kcal:2200, prot:185, ch:215, greix:65,
+    meals:[
+      {time:'07:30', name:'Esmorzar', desc:'Civada (80g) + llet desnatada (250ml) + 2 ous remenats + plàtan petit', kcal:480},
+      {time:'10:30', name:'Snack matí', desc:'Iogurt grec 0% (200g) + nous (20g) + maduixes (150g)', kcal:280},
+      {time:'13:30', name:'Dinar', desc:'Pit de pollastre (200g) + arròs integral (80g sec) + bròcoli + AOVE', kcal:520},
+      {time:'17:00', name:'Pre-entrenament', desc:'Plàtan + torrades integrals (2) + mantequilla de cacauet (15g)', kcal:320},
+      {time:'19:30', name:'Post-entrenament', desc:'Batut proteïna (30g) + llet (250ml) + fruita', kcal:300},
+      {time:'21:00', name:'Sopar', desc:'Salmó (180g) + patata bullida (200g) + enciam + tomàquet', kcal:300},
+    ]
+  },
+  // DIMARTS - Normal 2200 kcal
+  2: {
+    type:'normal', kcal:2200, prot:185, ch:215, greix:65,
+    meals:[
+      {time:'07:30', name:'Esmorzar', desc:'Pa integral (60g) + ou dur (2) + tomàquet + AOVE + suc taronja', kcal:460},
+      {time:'10:30', name:'Snack matí', desc:'Batut proteïna (25g) + llet desnatada (200ml) + poma', kcal:260},
+      {time:'13:30', name:'Dinar', desc:'Tonyina natural (180g) + pasta integral (75g sec) + tomàquet + oli', kcal:530},
+      {time:'17:00', name:'Pre-entrenament', desc:'Dàtils (30g) + arròs inflat (30g) + càseum (100g)', kcal:310},
+      {time:'19:30', name:'Post-entrenament', desc:'Pèsols (100g) + ou dur (2) + torrades (2)', kcal:290},
+      {time:'21:00', name:'Sopar', desc:'Pit de gall d\'indi (200g) + verdures al vapor + boniato (150g)', kcal:350},
+    ]
+  },
+  // DIMECRES - Normal 2200 kcal
+  3: {
+    type:'normal', kcal:2200, prot:185, ch:215, greix:65,
+    meals:[
+      {time:'07:30', name:'Esmorzar', desc:'Granola proteica (60g) + llet (300ml) + kiwi (2) + ametlles (15g)', kcal:470},
+      {time:'10:30', name:'Snack matí', desc:'Formatget (2u) + poma + nous (15g)', kcal:250},
+      {time:'13:30', name:'Dinar', desc:'Lluç al forn (220g) + llenties (150g cuit) + enciam + vinagreta', kcal:510},
+      {time:'17:00', name:'Pre-entrenament', desc:'Plàtan + torrades d\'arròs (3) + mel (10g)', kcal:300},
+      {time:'19:30', name:'Post-entrenament', desc:'Batut proteïna (30g) + llet (250ml)', kcal:290},
+      {time:'21:00', name:'Sopar', desc:'Carn de vedella magra (180g) + espinacs saltat + puré de carbassa', kcal:380},
+    ]
+  },
+  // DIJOUS - Normal 2200 kcal
+  4: {
+    type:'normal', kcal:2200, prot:185, ch:215, greix:65,
+    meals:[
+      {time:'07:30', name:'Esmorzar', desc:'Torrades integrals (3) + ou passat per aigua (2) + suc de taronja natural', kcal:450},
+      {time:'10:30', name:'Snack matí', desc:'Iogurt skyr (200g) + gerds (100g) + xocolata negra 85% (15g)', kcal:270},
+      {time:'13:30', name:'Dinar', desc:'Pollastre a la planxa (200g) + quinoa (80g sec) + pebrot + carabassó', kcal:520},
+      {time:'17:00', name:'Pre-entrenament', desc:'Pa arròs (2 torrades) + plàtan + proteïna (15g)', kcal:310},
+      {time:'19:30', name:'Post-entrenament', desc:'Batut recuperació: proteïna + plàtan + avena + llet', kcal:350},
+      {time:'21:00', name:'Sopar', desc:'Bacallà dessalat al vapor (200g) + mongeta tendra + patata (100g)', kcal:300},
+    ]
+  },
+  // DIVENDRES - Normal 2200 kcal
+  5: {
+    type:'normal', kcal:2200, prot:185, ch:215, greix:65,
+    meals:[
+      {time:'07:30', name:'Esmorzar', desc:'Bols de civada: avena (80g) + proteïna (20g) + llet + nabius', kcal:490},
+      {time:'10:30', name:'Snack matí', desc:'Formatge cottage (200g) + meló (200g)', kcal:240},
+      {time:'13:30', name:'Dinar', desc:'Rap o dorada (220g) + arròs basmati (80g sec) + amanida verda', kcal:520},
+      {time:'17:00', name:'Pre-entrenament', desc:'Tortitas d\'arròs (3) + mantequilla cacauet (20g) + plàtan', kcal:320},
+      {time:'19:30', name:'Post-entrenament', desc:'Batut proteïna + llet + fruita', kcal:280},
+      {time:'21:00', name:'Sopar', desc:'Espàrrecs a la planxa + ou dur (3) + pa integral (30g)', kcal:350},
+    ]
+  },
+  // DISSABTE - Trampa 2600 kcal
+  6: {
+    type:'trampa', kcal:2600, prot:185, ch:240, greix:80,
+    meals:[
+      {time:'08:00', name:'Esmorzar', desc:'Civada (80g) + llet (300ml) + ou (2) + fruita variada', kcal:460},
+      {time:'11:00', name:'Snack matí', desc:'Iogurt + fruita + nous (25g)', kcal:260},
+      {time:'13:30', name:'🍕 Àpat trampa (migdia)', desc:'Àpat lliure moderat: pizza artesana / pasta / hamburguesa + postre', kcal:900},
+      {time:'17:00', name:'Snack tarda', desc:'Fruita (200g) + iogurt grec (150g)', kcal:230},
+      {time:'21:00', name:'Sopar lleuger', desc:'Verdures al vapor + ou dur (2) + pa integral (30g)', kcal:350},
+      {time:'22:00', name:'Optativ', desc:'Iogurt desnatat o infusió', kcal:100},
+    ]
+  },
+  // DIUMENGE - Descans 1900 kcal
+  0: {
+    type:'diumenge', kcal:1900, prot:170, ch:190, greix:58,
+    meals:[
+      {time:'09:00', name:'Esmorzar', desc:'Pa integral (50g) + ou dur (2) + tomàquet + AOVE + cafè', kcal:380},
+      {time:'11:30', name:'Snack matí', desc:'Fruita (1 peça) + ametlles (20g)', kcal:200},
+      {time:'14:00', name:'Dinar', desc:'Sopa de verdures + peix blanc (180g) + amanida + pa (30g)', kcal:480},
+      {time:'17:30', name:'Snack tarda', desc:'Iogurt grec 0% (200g) + nabius (100g)', kcal:170},
+      {time:'21:00', name:'Sopar', desc:'Ou escalfat (2) + espinacs saltat + xampinyons + pa integral (30g)', kcal:370},
+      {time:'22:00', name:'Optativ', desc:'Batut proteïna (20g) + llet (200ml)', kcal:200},
+    ]
+  },
+};
+
+// ============================================================
+// UTILS
+// ============================================================
+function pad(n){ return String(n).padStart(2,'0'); }
+function dateStr(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+function parseDate(s){ const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+function daysBetween(a,b){ return Math.round((b-a)/(1000*60*60*24)); }
+function today(){ return new Date(); }
+
+function getDayType(date){
+  const ds = dateStr(date);
+  if(CURSA_DAYS.includes(ds)) return 'cursa';
+  if(CARREGA_DAYS.includes(ds)) return 'carrega';
+  const dow = date.getDay();
+  if(dow===6) return 'trampa';
+  if(dow===0) return 'diumenge';
+  return 'normal';
+}
+
+function getDayTypeInfo(type){
+  const map = {
+    normal:   {label:'Dia normal', sub:'2.200 kcal · Dèficit calòric', color:'var(--blue)', icon:'💪', badge:'badge-blue'},
+    trampa:   {label:'Dia trampa 🍕', sub:'2.600 kcal · Àpat lliure al migdia', color:'var(--orange)', icon:'🍕', badge:'badge-orange'},
+    diumenge: {label:'Dia de descans', sub:'1.900 kcal · Recuperació', color:'var(--blue)', icon:'😴', badge:'badge-blue'},
+    carrega:  {label:'Càrrega de CH ⚡', sub:'2.800 kcal · CH augmentats a 340g', color:'var(--purple)', icon:'⚡', badge:'badge-purple'},
+    cursa:    {label:'DIA DE CURSA 🏅', sub:'3.200 kcal · CH 380g · Màxim rendiment!', color:'var(--red)', icon:'🏅', badge:'badge-red'},
+  };
+  return map[type] || map.normal;
+}
+
+function getMacros(type){
+  return MACROS[type] || MACROS.normal;
+}
+
+function getMealPlan(dow){
+  return MEAL_PLAN[dow];
+}
+
+function showToast(msg, duration=2500){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), duration);
+}
+
+// ============================================================
+// STORAGE
+// ============================================================
+function loadRegistres(){
+  const raw = localStorage.getItem('daniel_registres');
+  if(raw) return JSON.parse(raw);
+  // Dades inicials
+  const ini = [{date:'2026-06-23', pes:100, greig:32.9, visceral:14, nota:'Inici'}];
+  localStorage.setItem('daniel_registres', JSON.stringify(ini));
+  return ini;
+}
+function saveRegistres(data){
+  localStorage.setItem('daniel_registres', JSON.stringify(data));
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+let currentChartType = 'pes';
+
+function goPage(id, btn){
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if(btn) btn.classList.add('active');
+
+  if(id==='diet') renderDiet();
+  if(id==='calendar') renderCalendar();
+  if(id==='registro') renderRegistre();
+  if(id==='charts') renderCharts(currentChartType);
+}
+
+// ============================================================
+// DASHBOARD
+// ============================================================
+function renderDashboard(){
+  const now = today();
+  const dow = now.getDay();
+  const type = getDayType(now);
+  const info = getDayTypeInfo(type);
+  const macros = getMacros(type);
+  const plan = getMealPlan(dow) || MEAL_PLAN[1];
+
+  // Date
+  const opts = {weekday:'long', day:'numeric', month:'long', year:'numeric'};
+  document.getElementById('dashDate').textContent = now.toLocaleDateString('ca-ES', opts);
+
+  // Countdowns
+  const d1 = daysBetween(now, RACE1);
+  const d2 = daysBetween(now, RACE2);
+  const el1 = document.getElementById('cd1Days');
+  const el2 = document.getElementById('cd2Days');
+  el1.textContent = Math.max(0,d1);
+  el2.textContent = Math.max(0,d2);
+  if(d1 < 14) el1.classList.add('urgent');
+  if(d2 < 14) el2.classList.add('urgent');
+
+  // Day type banner
+  const banner = document.getElementById('dayTypeBanner');
+  banner.style.background = info.color + '22';
+  banner.style.border = `1px solid ${info.color}44`;
+  banner.innerHTML = `
+    <div class="icon">${info.icon}</div>
+    <div class="info">
+      <div class="title" style="color:${info.color}">${info.label}</div>
+      <div class="sub">${info.sub}</div>
+    </div>`;
+
+  // Macros
+  const mp = document.getElementById('dashMacros');
+  mp.innerHTML = `
+    <div class="macro-pill"><div class="val" style="color:var(--orange)">${macros.kcal}</div><div class="lbl">Kcal</div></div>
+    <div class="macro-pill"><div class="val" style="color:var(--blue)">${macros.prot}g</div><div class="lbl">Prot</div></div>
+    <div class="macro-pill"><div class="val" style="color:var(--yellow)">${macros.ch}g</div><div class="lbl">CH</div></div>
+    <div class="macro-pill"><div class="val" style="color:var(--purple)">${macros.greix}g</div><div class="lbl">Greix</div></div>`;
+
+  // Bars
+  const db = document.getElementById('dashBars');
+  db.innerHTML = `
+    <div style="margin-top:8px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:4px"><span>Proteïna</span><span>${macros.prot}g / 200g</span></div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:${Math.min(100,macros.prot/200*100).toFixed(0)}%;background:var(--blue)"></div></div>
+    </div>
+    <div style="margin-top:8px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:4px"><span>Carbohidrats</span><span>${macros.ch}g / 380g</span></div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:${Math.min(100,macros.ch/380*100).toFixed(0)}%;background:var(--yellow)"></div></div>
+    </div>
+    <div style="margin-top:8px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text2);margin-bottom:4px"><span>Greix</span><span>${macros.greix}g / 80g</span></div>
+      <div class="bar-wrap"><div class="bar-fill" style="width:${Math.min(100,macros.greix/80*100).toFixed(0)}%;background:var(--purple)"></div></div>
+    </div>`;
+
+  // Body stats
+  const registres = loadRegistres();
+  const last = registres[registres.length-1];
+  const first = registres[0];
+  const pesChange = last ? (last.pes - first.pes).toFixed(1) : 0;
+  const greigChange = last ? (last.greig - first.greig).toFixed(1) : 0;
+  document.getElementById('bodyStats').innerHTML = `
+    <div class="stat-box">
+      <div class="val" style="color:var(--green)">${last ? last.pes : 100} kg</div>
+      <div class="lbl">Pes actual</div>
+      <div class="change ${pesChange<=0?'change-neg':'change-pos'}">${pesChange>0?'+':''}${pesChange} kg</div>
+    </div>
+    <div class="stat-box">
+      <div class="val" style="color:var(--orange)">${last ? last.greig : 32.9}%</div>
+      <div class="lbl">% Greix</div>
+      <div class="change ${greigChange<=0?'change-neg':'change-pos'}">${greigChange>0?'+':''}${greigChange}%</div>
+    </div>
+    <div class="stat-box">
+      <div class="val" style="color:var(--red)">${last ? last.visceral : 14}</div>
+      <div class="lbl">Visceral</div>
+      <div class="change">Obj: &lt;9</div>
+    </div>
+    <div class="stat-box">
+      <div class="val" style="color:var(--blue)">63.6 kg</div>
+      <div class="lbl">Massa muscular</div>
+      <div class="change" style="color:var(--green)">Excel·lent ✓</div>
+    </div>`;
+
+  // Meals
+  const dm = document.getElementById('dashMeals');
+  dm.innerHTML = plan.meals.map(m=>`
+    <div class="meal-item">
+      <div class="meal-time">${m.time}</div>
+      <div class="meal-info">
+        <div class="meal-name">${m.name}</div>
+        <div class="meal-desc">${m.desc}</div>
+      </div>
+      <div class="meal-kcal">${m.kcal} kcal</div>
+    </div>`).join('');
+}
+
+// ============================================================
+// DIET
+// ============================================================
+let selectedDietDay = new Date().getDay();
+
+function renderDiet(){
+  const selector = document.getElementById('dietDaySelector');
+  const dayNames = ['Dg','Dl','Dm','Dc','Dj','Dv','Ds'];
+  const fullNames = ['Diumenge','Dilluns','Dimarts','Dimecres','Dijous','Divendres','Dissabte'];
+  const now = new Date();
+
+  // Create selector for Mon–Sun (ordered Mon to Sun: 1..6,0)
+  const order = [1,2,3,4,5,6,0];
+  selector.innerHTML = order.map(d => {
+    const plan = MEAL_PLAN[d];
+    const cls = [
+      'day-btn',
+      d===selectedDietDay ? 'active' : '',
+      d===now.getDay() ? 'today' : '',
+      plan && plan.type==='trampa' ? 'trampa' : '',
+      plan && plan.type==='diumenge' ? 'diumenge' : '',
+    ].filter(Boolean).join(' ');
+    return `<button class="${cls}" onclick="selectDietDay(${d})">
+      <span>${dayNames[d]}</span>
+      <span class="day-num">${['D','L','M','X','J','V','S'][d]}</span>
+    </button>`;
+  }).join('');
+
+  const plan = MEAL_PLAN[selectedDietDay] || MEAL_PLAN[1];
+  const info = getDayTypeInfo(plan.type);
+
+  // Day type
+  document.getElementById('dietDayType').innerHTML = `
+    <div class="day-type-banner" style="background:${info.color}22;border:1px solid ${info.color}44;margin-bottom:14px">
+      <div class="icon">${info.icon}</div>
+      <div class="info">
+        <div class="title" style="color:${info.color}">${fullNames[selectedDietDay]} · ${info.label}</div>
+        <div class="sub">${info.sub}</div>
+      </div>
+    </div>`;
+
+  // Macros
+  document.getElementById('dietMacroCard').innerHTML = `
+    <div class="card-title">MACROS DEL DIA</div>
+    <div class="macro-row">
+      <div class="macro-pill"><div class="val" style="color:var(--orange)">${plan.kcal}</div><div class="lbl">Kcal</div></div>
+      <div class="macro-pill"><div class="val" style="color:var(--blue)">${plan.prot}g</div><div class="lbl">Prot</div></div>
+      <div class="macro-pill"><div class="val" style="color:var(--yellow)">${plan.ch}g</div><div class="lbl">CH</div></div>
+      <div class="macro-pill"><div class="val" style="color:var(--purple)">${plan.greix}g</div><div class="lbl">Greix</div></div>
+    </div>
+    <div style="font-size:12px;color:var(--text2);margin-top:8px">
+      Metabolisme basal: 1.888 kcal ·
+      ${plan.kcal > 1888 ? `Superàvit +${plan.kcal-1888} kcal` : `Dèficit ${plan.kcal-1888} kcal`}
+    </div>`;
+
+  // Meals
+  document.getElementById('dietMealsCard').innerHTML = `
+    <div class="card-title">ÀPATS (${plan.meals.length})</div>
+    ${plan.meals.map((m,i)=>`
+      <div class="meal-item">
+        <div class="meal-time">${m.time}</div>
+        <div class="meal-info">
+          <div class="meal-name">${m.name}</div>
+          <div class="meal-desc">${m.desc}</div>
+        </div>
+        <div class="meal-kcal">${m.kcal} kcal</div>
+      </div>`).join('')}
+    <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-weight:700">
+      <span>Total</span>
+      <span style="color:var(--orange)">${plan.meals.reduce((a,m)=>a+m.kcal,0)} kcal</span>
+    </div>`;
+}
+
+function selectDietDay(d){
+  selectedDietDay = d;
+  renderDiet();
+}
+
+// ============================================================
+// CALENDAR
+// ============================================================
+let calYear = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+
+function renderCalendar(){
+  const monthNames = ['Gener','Febrer','Març','Abril','Maig','Juny',
+    'Juliol','Agost','Setembre','Octubre','Novembre','Desembre'];
+  document.getElementById('calTitle').textContent = `${monthNames[calMonth]} ${calYear}`;
+
+  const grid = document.getElementById('calGrid');
+  const dayLabels = ['Dl','Dm','Dc','Dj','Dv','Ds','Dg'];
+  let html = dayLabels.map(d=>`<div class="cal-day-label">${d}</div>`).join('');
+
+  const first = new Date(calYear, calMonth, 1);
+  // Mon=0, ..., Sun=6 (European)
+  let startDow = (first.getDay() + 6) % 7;
+  for(let i=0;i<startDow;i++) html += `<div class="cal-day empty"></div>`;
+
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const todayStr = dateStr(new Date());
+
+  for(let d=1;d<=daysInMonth;d++){
+    const dt = new Date(calYear, calMonth, d);
+    const ds = dateStr(dt);
+    const dow = dt.getDay(); // 0=Sun,6=Sat
+    let cls = 'cal-day normal';
+    let label = '';
+    if(CURSA_DAYS.includes(ds)){ cls='cal-day cursa'; label='🏅'; }
+    else if(CARREGA_DAYS.includes(ds)){ cls='cal-day carrega'; label='⚡'; }
+    else if(dow===6){ cls='cal-day trampa'; label='🍕'; }
+    else if(dow===0){ cls='cal-day diumenge'; }
+    if(ds===todayStr) cls += ' today';
+
+    html += `<div class="${cls}" title="${ds}">${d}<br><span style="font-size:9px">${label}</span></div>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+function calPrev(){
+  calMonth--;
+  if(calMonth<0){ calMonth=11; calYear--; }
+  renderCalendar();
+}
+function calNext(){
+  calMonth++;
+  if(calMonth>11){ calMonth=0; calYear++; }
+  renderCalendar();
+}
+
+// ============================================================
+// REGISTRE
+// ============================================================
+function renderRegistre(){
+  // Set default date
+  document.getElementById('regDate').value = dateStr(new Date());
+
+  const registres = loadRegistres();
+  const tbody = document.getElementById('registreTbody');
+
+  if(!registres.length){
+    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text2);text-align:center;padding:16px">Sense entrades</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = [...registres].reverse().map((r,i)=>{
+    const idx = registres.length - 1 - i;
+    return `<tr>
+      <td>${r.date}</td>
+      <td><strong>${r.pes}</strong> kg</td>
+      <td style="color:var(--orange)">${r.greig}%</td>
+      <td style="color:var(--red)">${r.visceral}</td>
+      <td><button class="btn-red btn" onclick="deleteRegistre(${idx})">✕</button></td>
+    </tr>`;
+  }).join('');
+}
+
+function saveRegistre(){
+  const date = document.getElementById('regDate').value;
+  const pes = parseFloat(document.getElementById('regPes').value);
+  const greig = parseFloat(document.getElementById('regGreix').value);
+  const visceral = parseFloat(document.getElementById('regVisceral').value);
+  const nota = document.getElementById('regNota').value;
+
+  if(!date || isNaN(pes)){
+    showToast('⚠️ Omple data i pes'); return;
+  }
+
+  const registres = loadRegistres();
+  registres.push({date, pes, greig: greig||0, visceral: visceral||0, nota});
+  registres.sort((a,b)=>a.date.localeCompare(b.date));
+  saveRegistres(registres);
+  renderRegistre();
+  showToast('✅ Entrada desada!');
+
+  // Clear
+  document.getElementById('regPes').value='';
+  document.getElementById('regGreix').value='';
+  document.getElementById('regVisceral').value='';
+  document.getElementById('regNota').value='';
+}
+
+function deleteRegistre(idx){
+  const registres = loadRegistres();
+  registres.splice(idx,1);
+  saveRegistres(registres);
+  renderRegistre();
+  showToast('🗑 Entrada eliminada');
+}
+
+// ============================================================
+// CHARTS
+// ============================================================
+let chartInstances = {};
+
+function destroyChart(id){
+  if(chartInstances[id]){
+    chartInstances[id].destroy();
+    delete chartInstances[id];
+  }
+}
+
+function showChart(type, btn){
+  currentChartType = type;
+  document.querySelectorAll('.tab-pill').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  ['chartPes','chartGreig','chartVisceral','chartMacros'].forEach(id=>{
+    document.getElementById(id).style.display = 'none';
+  });
+  const map = {pes:'chartPes', greig:'chartGreig', visceral:'chartVisceral', macros:'chartMacros'};
+  document.getElementById(map[type]).style.display = 'block';
+  renderCharts(type);
+}
+
+function renderCharts(type){
+  const registres = loadRegistres();
+  const labels = registres.map(r=>r.date);
+  const pesData = registres.map(r=>r.pes);
+  const greigData = registres.map(r=>r.greig);
+  const visceralData = registres.map(r=>r.visceral);
+
+  const chartDefaults = {
+    responsive: true,
+    plugins: { legend: { display: false }, tooltip: { enabled: true } },
+    scales: {
+      x: { ticks: { color:'#94a3b8', maxRotation:45, font:{size:10} }, grid: { color:'#334155' } },
+      y: { ticks: { color:'#94a3b8', font:{size:10} }, grid: { color:'#334155' } }
+    }
+  };
+
+  if(type==='pes'){
+    destroyChart('cPes');
+    const last = pesData[pesData.length-1] || 100;
+    const objPes = 88;
+    // Projection line
+    const projLabels = [...labels];
+    const projData = [...pesData.map(()=>null)];
+    projData[projData.length-1] = last;
+    const race1Str = '2026-10-31';
+    const race2Str = '2027-01-24';
+    const projTargets = [race1Str, race2Str];
+    projTargets.forEach(dt => { if(!projLabels.includes(dt)){ projLabels.push(dt); projData.push(null); }});
+    projLabels.sort();
+    const lastIdx = projLabels.lastIndexOf(labels[labels.length-1] || '');
+    // Linear projection from current to 88kg at last race
+    const dFrom = parseDate(projLabels[lastIdx<0?0:lastIdx] || labels[0] || dateStr(new Date()));
+    const dTo = parseDate(race2Str);
+    const totalDays = daysBetween(dFrom,dTo);
+    const fullProjData = projLabels.map((l,i)=>{
+      if(labels.includes(l)) return null;
+      const dCur = parseDate(l);
+      const elapsed = daysBetween(dFrom,dCur);
+      if(elapsed<=0) return null;
+      const proj = last + (objPes - last) * (elapsed/totalDays);
+      return Math.max(objPes, parseFloat(proj.toFixed(1)));
+    });
+    fullProjData[lastIdx<0?0:lastIdx] = last;
+
+    chartInstances['cPes'] = new Chart(document.getElementById('cPes'), {
+      type:'line',
+      data:{
+        labels: projLabels,
+        datasets:[
+          { label:'Pes real', data: projLabels.map(l=>{ const i=labels.indexOf(l); return i>=0?pesData[i]:null; }),
+            borderColor:'#22c55e', backgroundColor:'#22c55e33', fill:true, tension:.3, pointRadius:4 },
+          { label:'Projecció', data:fullProjData,
+            borderColor:'#3b82f6', borderDash:[6,3], fill:false, tension:.3, pointRadius:2, borderWidth:2 },
+        ]
+      },
+      options:{...chartDefaults, plugins:{...chartDefaults.plugins, legend:{display:true, labels:{color:'#f1f5f9',font:{size:12}}}}}
+    });
+
+    // Progress
+    const pct = Math.max(0,Math.min(100,((100-last)/(100-objPes)*100)));
+    document.getElementById('pesProgress').textContent = `${last} kg → ${objPes} kg`;
+    document.getElementById('pesProgressBar').style.width = pct.toFixed(0)+'%';
+  }
+
+  if(type==='greig'){
+    destroyChart('cGreig');
+    chartInstances['cGreig'] = new Chart(document.getElementById('cGreig'), {
+      type:'line',
+      data:{
+        labels,
+        datasets:[
+          { label:'% Greix', data:greigData, borderColor:'#f97316', backgroundColor:'#f9731633', fill:true, tension:.3, pointRadius:4 },
+          { label:'Objectiu (<22%)', data:labels.map(()=>22), borderColor:'#22c55e', borderDash:[6,3], fill:false, pointRadius:0, borderWidth:2 },
+        ]
+      },
+      options:{...chartDefaults, plugins:{...chartDefaults.plugins, legend:{display:true, labels:{color:'#f1f5f9',font:{size:12}}}}}
+    });
+    const last = greigData[greigData.length-1]||32.9;
+    const pct = Math.max(0,Math.min(100,((32.9-last)/(32.9-22)*100)));
+    document.getElementById('greigProgress').textContent = `${last}% → <22%`;
+    document.getElementById('greigProgressBar').style.width = pct.toFixed(0)+'%';
+  }
+
+  if(type==='visceral'){
+    destroyChart('cVisceral');
+    chartInstances['cVisceral'] = new Chart(document.getElementById('cVisceral'), {
+      type:'line',
+      data:{
+        labels,
+        datasets:[
+          { label:'Visceral', data:visceralData, borderColor:'#ef4444', backgroundColor:'#ef444433', fill:true, tension:.3, pointRadius:4 },
+          { label:'Objectiu (<9)', data:labels.map(()=>9), borderColor:'#22c55e', borderDash:[6,3], fill:false, pointRadius:0, borderWidth:2 },
+        ]
+      },
+      options:{...chartDefaults, plugins:{...chartDefaults.plugins, legend:{display:true, labels:{color:'#f1f5f9',font:{size:12}}}}}
+    });
+    const last = visceralData[visceralData.length-1]||14;
+    const pct = Math.max(0,Math.min(100,((14-last)/(14-9)*100)));
+    document.getElementById('visceralProgress').textContent = `${last} → <9`;
+    document.getElementById('visceralProgressBar').style.width = pct.toFixed(0)+'%';
+  }
+
+  if(type==='macros'){
+    destroyChart('cMacros');
+    const now = new Date();
+    const dayType = getDayType(now);
+    const macros = getMacros(dayType);
+    // Kcal from macros: prot*4 + ch*4 + greix*9
+    const protKcal = macros.prot * 4;
+    const chKcal   = macros.ch * 4;
+    const greixKcal= macros.greix * 9;
+
+    chartInstances['cMacros'] = new Chart(document.getElementById('cMacros'), {
+      type:'doughnut',
+      data:{
+        labels:['Proteïna','Carbohidrats','Greix'],
+        datasets:[{
+          data:[protKcal, chKcal, greixKcal],
+          backgroundColor:['#3b82f6','#eab308','#a855f7'],
+          borderColor:['#1e293b','#1e293b','#1e293b'],
+          borderWidth:3,
+        }]
+      },
+      options:{
+        responsive:true,
+        plugins:{
+          legend:{display:false},
+          tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${ctx.raw} kcal`}}
+        },
+        cutout:'65%',
+      }
+    });
+
+    const total = protKcal+chKcal+greixKcal;
+    document.getElementById('macrosLegend').innerHTML = [
+      {label:'Proteïna', val:macros.prot, kcal:protKcal, color:'#3b82f6'},
+      {label:'CH', val:macros.ch, kcal:chKcal, color:'#eab308'},
+      {label:'Greix', val:macros.greix, kcal:greixKcal, color:'#a855f7'},
+    ].map(m=>`
+      <div style="display:flex;align-items:center;gap:5px">
+        <div style="width:10px;height:10px;border-radius:3px;background:${m.color}"></div>
+        <div style="font-size:12px;color:var(--text2)">${m.label}: <strong style="color:var(--text)">${m.val}g</strong> (${(m.kcal/total*100).toFixed(0)}%)</div>
+      </div>`).join('');
+  }
+}
+
+// ============================================================
+// PWA / SERVICE WORKER
+// ============================================================
+const SW_CODE = `
+const CACHE='daniel-runner-v1';
+const ASSETS=['./'];
+self.addEventListener('install',e=>{
+  e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)));
+  self.skipWaiting();
+});
+self.addEventListener('activate',e=>{
+  e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
+  self.clients.claim();
+});
+self.addEventListener('fetch',e=>{
+  e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{
+    const clone=res.clone();
+    caches.open(CACHE).then(c=>c.put(e.request,clone));
+    return res;
+  }).catch(()=>caches.match('./'))));
+});
+`;
+
+function registerSW(){
+  if(!('serviceWorker' in navigator)) return;
+  const blob = new Blob([SW_CODE], {type:'application/javascript'});
+  const url  = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(url, {scope:'./'})
+    .then(()=>{ /* SW OK */ })
+    .catch(()=>{ /* SW fail, still works online */ });
+}
+
+// PWA Install
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', e=>{
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installBanner').classList.add('show');
+});
+document.getElementById('installBtn').addEventListener('click',()=>{
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then(()=>{ deferredPrompt=null; });
+  }
+  document.getElementById('installBanner').classList.remove('show');
+});
+window.addEventListener('appinstalled',()=>{
+  document.getElementById('installBanner').classList.remove('show');
+  showToast('✅ App instal·lada!');
+});
+
+// ============================================================
+// INIT
+// ============================================================
+window.addEventListener('DOMContentLoaded', ()=>{
+  registerSW();
+  renderDashboard();
+
+  // Set calendar to current month
+  const now = new Date();
+  calYear = now.getFullYear();
+  calMonth = now.getMonth();
+});
+</script>
+</body>
+</html>
