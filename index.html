@@ -699,6 +699,19 @@ nav{
       </div>
     </div>
     <button class="btn btn-blue" onclick="lookupBarcode(document.getElementById('barcodeInput').value.trim())" style="margin-bottom:14px;width:100%">🔍 Buscar a Open Food Facts</button>
+
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+      <div style="font-size:11px;color:var(--text2)">o bé</div>
+      <div style="flex:1;height:1px;background:var(--border)"></div>
+    </div>
+
+    <div class="form-group">
+      <label>🛒 URL de producte Amazon</label>
+      <input type="url" class="form-control" id="amazonUrlInput" placeholder="https://www.amazon.es/dp/B07X5TBMB7">
+    </div>
+    <button class="btn btn-ghost" onclick="lookupAmazon(document.getElementById('amazonUrlInput').value.trim())" style="margin-bottom:14px;width:100%;border-color:var(--orange);color:var(--orange)">🛒 Obtenir dades d'Amazon</button>
+
     <div id="barcodeResult"></div>
     <button class="btn btn-ghost" onclick="closeBarcodeModal()" style="margin-top:8px;width:100%">Cancel·lar</button>
   </div>
@@ -1283,6 +1296,157 @@ function applyLastProductToSupl(){
   closeBarcodeModal();
   renderPerfilSupplements();
   showToast('✅ '+(name||'Producte')+' assignat');
+}
+
+// ── AMAZON PRODUCT LOOKUP ──
+function parseAmazonText(text){
+  // Supports Spanish, Catalan, English supplement label formats
+  const patterns=[
+    {regex:/vitamina?\s*d\s*3?\s*[:\-]?\s*([\d,.]+)\s*(ui|iu|µg|mcg|mg)/i,label:'Vitamina D3',base:'vitamin-d'},
+    {regex:/vitamin\s*d\s*3?\s*[:\-]?\s*([\d,.]+)\s*(iu|ui|µg|mcg|mg)/i,label:'Vitamina D3',base:'vitamin-d'},
+    {regex:/vitamina?\s*c\s*[:\-]?\s*([\d,.]+)\s*(mg|g)/i,label:'Vitamina C',base:'vitamin-c'},
+    {regex:/vitamin[e]?\s*c\s*[:\-]?\s*([\d,.]+)\s*(mg|g)/i,label:'Vitamina C',base:'vitamin-c'},
+    {regex:/vitamina?\s*b\s*-?\s*12\s*[:\-]?\s*([\d,.]+)\s*(µg|mcg|mg)/i,label:'Vitamina B12',base:'vitamin-b12'},
+    {regex:/cobalamina?\s*[:\-]?\s*([\d,.]+)\s*(µg|mcg|mg)/i,label:'Vitamina B12',base:'vitamin-b12'},
+    {regex:/vitamina?\s*b\s*-?\s*6\s*[:\-]?\s*([\d,.]+)\s*(mg)/i,label:'Vitamina B6',base:'vitamin-b6'},
+    {regex:/vitamina?\s*e\s*[:\-]?\s*([\d,.]+)\s*(mg|ui|iu)/i,label:'Vitamina E',base:'vitamin-e'},
+    {regex:/folato|[aà]cid\s*f[òo]lic|folic\s*acid[:\-]?\s*([\d,.]+)\s*(µg|mcg|mg)/i,label:'Àcid Fòlic (B9)',base:'folates'},
+    {regex:/magn[eé]si[uo]?\s*[:\-]?\s*([\d,.]+)\s*(mg|g)/i,label:'Magnesi',base:'magnesium'},
+    {regex:/magnesium\s*[:\-]?\s*([\d,.]+)\s*(mg|g)/i,label:'Magnesi',base:'magnesium'},
+    {regex:/\bzinc\s*[:\-]?\s*([\d,.]+)\s*(mg)/i,label:'Zinc',base:'zinc'},
+    {regex:/\bferro?\s*[:\-]?\s*([\d,.]+)\s*(mg)/i,label:'Ferro',base:'iron'},
+    {regex:/\biron\s*[:\-]?\s*([\d,.]+)\s*(mg)/i,label:'Ferro',base:'iron'},
+    {regex:/calci[o]?\s*[:\-]?\s*([\d,.]+)\s*(mg|g)/i,label:'Calci',base:'calcium'},
+    {regex:/calcium\s*[:\-]?\s*([\d,.]+)\s*(mg|g)/i,label:'Calci',base:'calcium'},
+    {regex:/sel[eè]ni[o]?\s*[:\-]?\s*([\d,.]+)\s*(µg|mcg|mg)/i,label:'Seleni',base:'selenium'},
+    {regex:/selenium\s*[:\-]?\s*([\d,.]+)\s*(µg|mcg|mg)/i,label:'Seleni',base:'selenium'},
+    {regex:/omega.?3\s*[:\-]?\s*([\d,.]+)\s*(mg|g)/i,label:'Omega-3',base:'omega-3-fat'},
+    {regex:/\bepa\s*[:\-]?\s*([\d,.]+)\s*(mg|g)/i,label:'EPA',base:'epa'},
+    {regex:/\bdha\s*[:\-]?\s*([\d,.]+)\s*(mg|g)/i,label:'DHA',base:'dha'},
+    {regex:/col[·l]?[aà]gen[o]?\s*[:\-]?\s*([\d,.]+)\s*(mg|g)/i,label:'Col·lagen',base:'collagen'},
+    {regex:/collagen\s*[:\-]?\s*([\d,.]+)\s*(mg|g)/i,label:'Col·lagen',base:'collagen'},
+    {regex:/creatina?\s*[:\-]?\s*([\d,.]+)\s*(mg|g)/i,label:'Creatina',base:'creatine'},
+    {regex:/creatine\s*[:\-]?\s*([\d,.]+)\s*(mg|g)/i,label:'Creatina',base:'creatine'},
+    {regex:/prote[iï]n[ae]?\s*[:\-]?\s*([\d,.]+)\s*(mg|g)/i,label:'Proteïna',base:'proteins'},
+    {regex:/protein\s*[:\-]?\s*([\d,.]+)\s*(mg|g)/i,label:'Proteïna',base:'proteins'},
+    {regex:/leucina?\s*[:\-]?\s*([\d,.]+)\s*(mg|g)/i,label:'Leucina (BCAA)',base:'leucine'},
+    {regex:/melatonin[ae]?\s*[:\-]?\s*([\d,.]+)\s*(mg|µg|mcg)/i,label:'Melatonina',base:'melatonin'},
+    {regex:/cafeï?na?\s*[:\-]?\s*([\d,.]+)\s*(mg)/i,label:'Cafeïna',base:'caffeine'},
+    {regex:/caffeine\s*[:\-]?\s*([\d,.]+)\s*(mg)/i,label:'Cafeïna',base:'caffeine'},
+  ];
+  const rows=[];const seen=new Set();
+  patterns.forEach(({regex,label,base})=>{
+    if(seen.has(base)) return;
+    const m=text.match(regex);
+    const valStr=m&&(m[2]?m[1]:m[1]); // some patterns have group shift
+    if(!valStr) return;
+    const value=parseFloat(valStr.replace(',','.'));
+    if(!value) return;
+    const unitRaw=(m[3]||m[2]||'mg').toLowerCase();
+    const unit=unitRaw==='mcg'?'µg':(unitRaw==='iu'||unitRaw==='ui')?'UI':unitRaw;
+    seen.add(base);
+    rows.push({base,label,serving:value+' '+unit,per100:'-',value,unit});
+  });
+  return rows;
+}
+
+function parseAmazonPaste(){
+  const text=document.getElementById('amazonPasteArea')?.value||'';
+  if(!text.trim()){showToast('Enganxa el text del producte primer');return;}
+  const rows=parseAmazonText(text);
+  const tgt=document.getElementById('barcodeSuplTarget').textContent;
+  const name=document.getElementById('amazonProductName')?.value||'Producte Amazon';
+  _lastBarcodeResult={ean:'amazon-'+Date.now(),name,brand:'Amazon',servingSize:'',nutRows:rows,isAmazon:true};
+  const el=document.getElementById('barcodeResult');
+  if(rows.length===0){
+    el.innerHTML='<div style="color:var(--yellow);font-size:12px;padding:10px;background:#eab30822;border:1px solid var(--yellow);border-radius:10px">⚠️ No s\'han detectat nutrients al text. Assegura\'t d\'incloure la taula de "Valors nutricionals" o "Supplement Facts".</div>';
+    return;
+  }
+  el.innerHTML=`
+    <div style="background:var(--bg3);border-radius:12px;padding:12px;margin-bottom:10px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px">✅ ${rows.length} nutrients detectats</div>
+      <div style="overflow-x:auto"><table class="data-table">
+        <thead><tr><th>Nutrient</th><th>Per ració</th></tr></thead>
+        <tbody>${rows.map(r=>'<tr><td>'+r.label+'</td><td style="color:var(--orange);font-weight:700">'+r.serving+'</td></tr>').join('')}</tbody>
+      </table></div>
+    </div>
+    <button class="btn btn-green" onclick="applyLastProductToSupl()" style="width:100%">✅ Assignar a ${tgt}</button>`;
+}
+
+async function lookupAmazon(url){
+  if(!url){showToast('Introdueix un URL d\'Amazon');return;}
+  const asinM=url.match(/\/(?:dp|gp\/product)\/([A-Z0-9]{10})/i);
+  const el=document.getElementById('barcodeResult');
+  const asin=asinM?asinM[1]:'';
+  const tgt=document.getElementById('barcodeSuplTarget').textContent;
+
+  el.innerHTML='<div style="text-align:center;padding:16px;color:var(--text2)">🛒 Intentant obtenir dades d\'Amazon...</div>';
+
+  let productName='Producte Amazon'+(asin?' (ASIN: '+asin+')':'');
+  let fetchOk=false;
+
+  if(asin){
+    try{
+      // Try Spanish Amazon first, then .com
+      const domains=['amazon.es','amazon.com'];
+      for(const domain of domains){
+        const proxyUrl='https://corsproxy.io/?'+encodeURIComponent('https://www.'+domain+'/dp/'+asin+'?language=es_ES');
+        const r=await Promise.race([fetch(proxyUrl),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000))]);
+        const html=await r.text();
+        if(html.length>5000&&!html.includes('Type the characters')&&!html.includes('api-services-support')){
+          const parser=new DOMParser();
+          const doc=parser.parseFromString(html,'text/html');
+          const titleEl=doc.querySelector('#productTitle,h1.a-size-large');
+          if(titleEl) productName=titleEl.textContent.trim().slice(0,80);
+          // Collect all text from nutrient-rich zones
+          const zones=['#important-information','#feature-bullets','#productDescription','#aplus','[data-feature-name="importantInformation"]'];
+          const rawText=zones.map(sel=>doc.querySelector(sel)?.textContent||'').join('\n');
+          const rows=parseAmazonText(rawText);
+          _lastBarcodeResult={ean:asin,name:productName,brand:'Amazon',servingSize:'',nutRows:rows,isAmazon:true};
+          const prods=loadSuplProducts();
+          prods[asin]={ean:asin,name:productName,brand:'Amazon',nutRows:rows};
+          saveSuplProducts(prods);
+          if(rows.length>0){
+            fetchOk=true;
+            el.innerHTML=`
+              <div style="background:var(--bg3);border-radius:12px;padding:12px;margin-bottom:10px">
+                <div style="font-size:13px;font-weight:700;margin-bottom:2px">${productName}</div>
+                <div style="font-size:11px;color:var(--text2);margin-bottom:10px">ASIN: ${asin} · ${domain}</div>
+                <div style="overflow-x:auto"><table class="data-table">
+                  <thead><tr><th>Nutrient</th><th>Per ració</th></tr></thead>
+                  <tbody>${rows.map(r=>'<tr><td>'+r.label+'</td><td style="color:var(--orange);font-weight:700">'+r.serving+'</td></tr>').join('')}</tbody>
+                </table></div>
+              </div>
+              <button class="btn btn-green" onclick="applyLastProductToSupl()" style="width:100%">✅ Assignar a ${tgt}</button>`;
+            break;
+          }
+        }
+      }
+    }catch(e){}
+  }
+
+  if(!fetchOk){
+    // Fallback: manual paste
+    el.innerHTML=`
+      <div style="background:#eab30822;border:1px solid var(--yellow);border-radius:10px;padding:10px;font-size:12px;margin-bottom:12px">
+        ⚠️ Amazon no ha permès l'accés automàtic (protecció anti-bots). Fes servir el mètode manual:
+      </div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.5">
+        1️⃣ Obre el producte a Amazon<br>
+        2️⃣ Desplaça't fins a <strong>"Informació important"</strong> o <strong>"Dades nutricionals"</strong><br>
+        3️⃣ Selecciona i copia tot el text d'aquella secció<br>
+        4️⃣ Enganxa'l aquí:
+      </div>
+      <div class="form-group" style="margin-bottom:8px">
+        <label style="font-size:10px">NOM DEL PRODUCTE (opcional)</label>
+        <input type="text" class="form-control" id="amazonProductName" placeholder="ex: NOW Foods Vitamina D3 1000UI" value="${productName}">
+      </div>
+      <div class="form-group" style="margin-bottom:10px">
+        <label style="font-size:10px">TEXT DE NUTRIENTS / INGREDIENTS</label>
+        <textarea id="amazonPasteArea" class="form-control" rows="6" placeholder="Enganxa aquí el text de la secció de nutrients del producte Amazon..." style="resize:vertical;font-size:12px;line-height:1.5"></textarea>
+      </div>
+      <button class="btn btn-orange" onclick="parseAmazonPaste()" style="width:100%;margin-bottom:6px">🔍 Analitzar text enganxat</button>`;
+  }
 }
 
 function renderSuplDoses(active){
