@@ -80,12 +80,14 @@ nav{
 .check-item span{font-size:13px;font-weight:600}
 
 /* ── TYPE SELECTOR ── */
-.type-selector{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px}
+.type-selector{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
 .type-btn{display:flex;flex-direction:column;align-items:center;gap:4px;padding:12px 8px;background:var(--bg3);border:2px solid var(--border);border-radius:14px;color:var(--text2);font-size:12px;font-weight:700;transition:all .2s}
 .type-btn .t-icon{font-size:28px}
 .type-btn.active-peses{border-color:var(--blue);color:var(--blue);background:#3b82f622}
 .type-btn.active-boxeo{border-color:var(--red);color:var(--red);background:#ef444422}
 .type-btn.active-correr{border-color:var(--green);color:var(--green);background:#22c55e22}
+.type-btn.active-caminar{border-color:var(--yellow);color:var(--yellow);background:#eab30822}
+.training-card.caminar{border-left-color:var(--yellow)}
 
 /* ── MACROS ── */
 .macro-row{display:flex;gap:6px;margin-bottom:8px}
@@ -274,7 +276,7 @@ nav{
 
 <!-- ═══════════ DASHBOARD ═══════════ -->
 <div class="page active" id="page-dashboard">
-  <div class="sec-h">Hola, Daniel 🏃</div>
+  <div class="sec-h" id="dashGreeting">Hola, Daniel 🏃</div>
   <div class="sec-sub" id="dashDate"></div>
   <!-- Gamification -->
   <div class="gami-card" id="gamiCard"></div>
@@ -351,7 +353,16 @@ nav{
 <!-- ═══════════ ENTRENAMENT ═══════════ -->
 <div class="page" id="page-training">
   <div class="sec-h">Entrenament</div>
-  <div class="sec-sub">Registra les teves sessions</div>
+  <div class="sec-sub" id="trainWeekSub">Setmana actual</div>
+  <!-- Week navigation -->
+  <div style="display:flex;align-items:center;justify-content:space-between;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:8px 12px;margin-bottom:12px">
+    <button onclick="weekNav(-1)" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:5px 12px;font-size:16px">‹</button>
+    <div style="text-align:center">
+      <div id="trainWeekLabel" style="font-size:13px;font-weight:700"></div>
+      <div id="trainWeekStats" style="font-size:11px;color:var(--text2);margin-top:2px"></div>
+    </div>
+    <button onclick="weekNav(1)" id="weekNextBtn" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:5px 12px;font-size:16px">›</button>
+  </div>
   <!-- Add training button -->
   <button class="btn btn-green" onclick="openAddTraining()" style="margin-bottom:12px">+ Nova sessió</button>
   <!-- Filter tabs -->
@@ -360,6 +371,7 @@ nav{
     <button class="ftab" onclick="filterTraining('peses',this)">💪 Peses</button>
     <button class="ftab" onclick="filterTraining('boxeo',this)">🥊 Boxeo</button>
     <button class="ftab" onclick="filterTraining('correr',this)">🏃 Córrer</button>
+    <button class="ftab" onclick="filterTraining('caminar',this)">🚶 Caminar</button>
   </div>
   <!-- History -->
   <div id="trainingHistory"></div>
@@ -389,7 +401,7 @@ nav{
     <div class="card">
       <div class="card-title">NOVA MESURA</div>
       <div class="form-row"><div class="form-group"><label>Data</label><input type="date" class="form-control" id="rDate"></div><div class="form-group"><label>Pes (kg)</label><input type="number" step=".1" class="form-control" id="rPes" placeholder="100.0"></div></div>
-      <div style="font-size:11px;color:var(--text2);margin-bottom:8px">IMC calculat automàticament (alçada 1,80m)</div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:8px" id="imcHint">IMC calculat automàticament</div>
       <div class="form-row3">
         <div class="form-group"><label>% Greix</label><input type="number" step=".1" class="form-control" id="rGreix" placeholder="32.9"></div>
         <div class="form-group"><label>% Aigua</label><input type="number" step=".1" class="form-control" id="rAigua" placeholder="47.5"></div>
@@ -429,6 +441,67 @@ nav{
   </div>
 </div>
 
+<!-- ═══════════ PERFIL ═══════════ -->
+<div class="page" id="page-perfil">
+  <div class="sec-h">Perfil</div>
+  <div class="sec-sub">Configuració personal i objectius</div>
+  <!-- BMR/TDEE/Deficit summary card -->
+  <div class="card" id="perfilCalcCard"></div>
+  <!-- Personal data -->
+  <div class="card">
+    <div class="card-title">DADES PERSONALS</div>
+    <div class="form-row">
+      <div class="form-group"><label>Nom</label><input type="text" class="form-control" id="pNom" placeholder="Daniel" oninput="updatePerfilCalc()"></div>
+      <div class="form-group"><label>Sexe</label>
+        <select class="form-control" id="pSexe" onchange="updatePerfilCalc()">
+          <option value="home">Home</option>
+          <option value="dona">Dona</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row3">
+      <div class="form-group"><label>Pes (kg)</label><input type="number" step=".1" class="form-control" id="pPes" placeholder="100" oninput="updatePerfilCalc()"></div>
+      <div class="form-group"><label>Alçada (cm)</label><input type="number" class="form-control" id="pAlcada" placeholder="180" oninput="updatePerfilCalc()"></div>
+      <div class="form-group"><label>Edat</label><input type="number" class="form-control" id="pEdat" placeholder="40" oninput="updatePerfilCalc()"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Nivell activitat</label>
+        <select class="form-control" id="pActivitat" onchange="updatePerfilCalc()">
+          <option value="sedentari">Sedentari</option>
+          <option value="lleuger">Lleuger (1-3 dies/set)</option>
+          <option value="moderat">Moderat (3-5 dies/set)</option>
+          <option value="actiu">Actiu (6-7 dies/set)</option>
+          <option value="molt_actiu">Molt actiu</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Objectiu</label>
+        <select class="form-control" id="pObjectiu" onchange="updatePerfilCalc()">
+          <option value="perdre">Perdre pes</option>
+          <option value="mantenir">Mantenir</option>
+          <option value="guanyar">Guanyar massa</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  <!-- Kcal config -->
+  <div class="card">
+    <div class="card-title">KCAL DIÀRIES</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button id="btnModeAuto" class="btn btn-sm btn-green" onclick="setKcalMode('auto')" style="flex:1;font-size:12px">⚡ Auto (BMR/TDEE)</button>
+      <button id="btnModeManual" class="btn btn-sm btn-ghost" onclick="setKcalMode('manual')" style="flex:1;font-size:12px">✏️ Manual</button>
+    </div>
+    <div id="kcalAutoFields">
+      <div class="form-group"><label>Dèficit calòric (kcal a retallar del TDEE)</label><input type="number" class="form-control" id="pDeficit" placeholder="400" oninput="updatePerfilCalc()"></div>
+    </div>
+    <div id="kcalManualFields" style="display:none">
+      <div class="form-group"><label>Kcal diàries objectiu (total manual)</label><input type="number" class="form-control" id="pKcalManual" placeholder="2200" oninput="updatePerfilCalc()"></div>
+    </div>
+    <div id="kcalDeficitBanner" style="border-radius:12px;padding:12px;margin-top:4px;margin-bottom:10px"></div>
+    <div class="form-group"><label>Pes objectiu (kg)</label><input type="number" step=".1" class="form-control" id="pPesObj" placeholder="88" oninput="updatePerfilCalc()"></div>
+    <button class="btn btn-green" onclick="savePerfilPage()">✅ Desar perfil</button>
+  </div>
+</div>
+
 <!-- ═══════════ NAV ═══════════ -->
 <nav>
   <button class="nav-btn active" onclick="goPage('dashboard',this)"><span class="icon">🏠</span>Inici</button>
@@ -436,6 +509,7 @@ nav{
   <button class="nav-btn" onclick="goPage('calendar',this)"><span class="icon">📅</span>Calendari</button>
   <button class="nav-btn" onclick="goPage('training',this)"><span class="icon">💪</span>Entrena</button>
   <button class="nav-btn" onclick="goPage('stats',this)"><span class="icon">📊</span>Stats</button>
+  <button class="nav-btn" onclick="goPage('perfil',this)"><span class="icon">👤</span>Perfil</button>
 </nav>
 </div><!-- #app -->
 
@@ -473,6 +547,7 @@ nav{
         <button class="type-btn" id="tbPeses" onclick="selectTrainType('peses')"><span class="t-icon">🏋️</span>Peses</button>
         <button class="type-btn" id="tbBoxeo" onclick="selectTrainType('boxeo')"><span class="t-icon">🥊</span>Boxeo</button>
         <button class="type-btn" id="tbCorrer" onclick="selectTrainType('correr')"><span class="t-icon">🏃</span>Córrer</button>
+        <button class="type-btn" id="tbCaminar" onclick="selectTrainType('caminar')"><span class="t-icon">🚶</span>Caminar</button>
       </div>
     </div>
     <div class="form-group"><label>Data</label><input type="date" class="form-control" id="tData"></div>
@@ -507,6 +582,14 @@ nav{
         <div class="form-group"><label>Vel. km/h</label><input type="number" step=".1" class="form-control" id="tVel" placeholder="10.5"></div>
       </div>
     </div>
+    <!-- Caminar fields -->
+    <div id="tFieldsCaminar" style="display:none">
+      <div class="form-row">
+        <div class="form-group"><label>Temps (min)</label><input type="number" class="form-control" id="tCaminarMin" placeholder="45" oninput="updateCaminarKcal()"></div>
+        <div class="form-group"><label>Distància (km)</label><input type="number" step=".1" class="form-control" id="tCaminarKm" placeholder="3.5" oninput="updateCaminarKcal()"></div>
+      </div>
+      <div id="caminarKcalPreview" style="text-align:center;background:var(--bg3);border-radius:10px;padding:10px;font-size:14px;font-weight:700;color:var(--yellow)"></div>
+    </div>
     <div class="form-group"><label>Nota</label><input type="text" class="form-control" id="tNota" placeholder="Sensació, observacions..."></div>
     <button class="btn btn-green" onclick="saveTraining()" style="margin-bottom:8px">✅ Desar sessió</button>
     <button class="btn btn-ghost" onclick="closeModal('overlayTraining')">Cancel·lar</button>
@@ -525,24 +608,69 @@ const BUILT_IN_RACES = [
   {id:'r2', date:'2027-01-24', name:'Mitja Marató Granollers', km:21.1, location:'Granollers', color:'red'},
 ];
 
-const MACROS = {
-  normal:   {kcal:2200, prot:185, ch:215, greix:65},
-  trampa:   {kcal:2600, prot:185, ch:240, greix:80},
-  diumenge: {kcal:1900, prot:170, ch:190, greix:58},
-  carrega:  {kcal:2800, prot:185, ch:340, greix:65},
-  cursa:    {kcal:3200, prot:190, ch:380, greix:70},
+// ── PROFILE SYSTEM ──
+const DEFAULT_PROFILE = {
+  nom:'Daniel', sexe:'home', pes:100, alcada:180, edat:40,
+  activitat:'moderat', objectiu:'perdre', deficit:400, pesObjectiu:88,
+  kcalMode:'auto', kcalManual:0
 };
+const ACTIVITY_MULT = {sedentari:1.2,lleuger:1.375,moderat:1.55,actiu:1.725,molt_actiu:1.9};
+
+function loadProfile(){
+  const raw=localStorage.getItem('dr_profile');
+  return raw?{...DEFAULT_PROFILE,...JSON.parse(raw)}:{...DEFAULT_PROFILE};
+}
+function saveProfileData(p){localStorage.setItem('dr_profile',JSON.stringify(p));}
+
+function calcBMR(p){
+  const b=10*p.pes+6.25*p.alcada-5*p.edat;
+  return Math.round(p.sexe==='home'?b+5:b-161);
+}
+function calcTDEE(p){return Math.round(calcBMR(p)*(ACTIVITY_MULT[p.activitat]||1.55));}
+function calcNormalKcal(p){
+  if(p.kcalMode==='manual'&&p.kcalManual>0) return p.kcalManual;
+  const t=calcTDEE(p);
+  const sign=p.objectiu==='guanyar'?1:p.objectiu==='mantenir'?0:-1;
+  return Math.round(t+sign*(p.deficit||400));
+}
+
+function calcMacros(p){
+  const n=calcNormalKcal(p);
+  const kcals={normal:n,diumenge:Math.round(n*.87),trampa:Math.round(n*1.18),carrega:Math.round(n*1.27),cursa:Math.round(n*1.45)};
+  const protRatio=p.objectiu==='guanyar'?2.0:p.objectiu==='mantenir'?1.6:1.85;
+  const fatPct={normal:.28,diumenge:.28,trampa:.30,carrega:.15,cursa:.12};
+  const result={};
+  Object.entries(kcals).forEach(([type,kcal])=>{
+    const prot=Math.round(p.pes*protRatio);
+    const greix=Math.round(kcal*(fatPct[type]||.28)/9);
+    const ch=Math.max(50,Math.round((kcal-prot*4-greix*9)/4));
+    result[type]={kcal,prot,ch,greix};
+  });
+  return result;
+}
+
+function getMacros(){return calcMacros(loadProfile());}
 
 const MUSCLES = ['pit','biceps','triceps','espatlla','trapezi','esquena','cames'];
 const MUSCLE_LABELS = {pit:'Pit',biceps:'Bíceps',triceps:'Tríceps',espatlla:'Espatlles',trapezi:'Trapezi',esquena:'Esquena',cames:'Cames'};
 
-const DAY_TYPE_INFO = {
-  normal:   {label:'Dia normal',   sub:'2.200 kcal · Dèficit calòric',      color:'var(--blue)',   icon:'💪'},
-  trampa:   {label:'Dia trampa 🍕',sub:'2.600 kcal · Àpat lliure al migdia',color:'var(--orange)', icon:'🍕'},
-  diumenge: {label:'Dia de descans',sub:'1.900 kcal · Recuperació',          color:'var(--blue)',   icon:'😴'},
-  carrega:  {label:'Càrrega de CH ⚡',sub:'2.800 kcal · CH augmentats a 340g',color:'var(--purple)',icon:'⚡'},
-  cursa:    {label:'DIA DE CURSA 🏅',sub:'3.200 kcal · CH 380g · A tope!',   color:'var(--red)',    icon:'🏅'},
-};
+function getDayTypeInfo(type){
+  const m=getMacros()[type]||getMacros().normal;
+  const subs={
+    normal:   `${m.kcal} kcal · Dèficit calòric`,
+    trampa:   `${m.kcal} kcal · Àpat lliure al migdia`,
+    diumenge: `${m.kcal} kcal · Recuperació`,
+    carrega:  `${m.kcal} kcal · CH augmentats a ${m.ch}g`,
+    cursa:    `${m.kcal} kcal · CH ${m.ch}g · A tope!`,
+  };
+  return {
+    normal:   {label:'Dia normal',      color:'var(--blue)',   icon:'💪', sub:subs.normal},
+    trampa:   {label:'Dia trampa 🍕',   color:'var(--orange)', icon:'🍕', sub:subs.trampa},
+    diumenge: {label:'Dia de descans',  color:'var(--blue)',   icon:'😴', sub:subs.diumenge},
+    carrega:  {label:'Càrrega de CH ⚡',color:'var(--purple)', icon:'⚡', sub:subs.carrega},
+    cursa:    {label:'DIA DE CURSA 🏅', color:'var(--red)',    icon:'🏅', sub:subs.cursa},
+  }[type]||{label:type,color:'var(--blue)',icon:'💪',sub:''};
+}
 
 const LEVELS = [
   {min:0,    max:199,  icon:'🌱', name:'Principiant'},
@@ -708,23 +836,30 @@ function getRaceForDate(ds){
 // ═══════════════════════════════════════════
 // TRAINING IMPACT ON NUTRITION
 // ═══════════════════════════════════════════
+function calcWalkingKcal(pes, km, minutes){
+  if(!km||!minutes) return 0;
+  const pace=km/(minutes/60);
+  const met=pace<3?2.5:pace<4?3.0:pace<5?3.5:pace<6?4.5:5.0;
+  return Math.round(met*pes*(minutes/60));
+}
+
 function calcTrainingImpact(trainings, targetDateStr){
-  // Filter sessions for the given date
   const sessions=trainings.filter(t=>t.date===targetDateStr);
   if(!sessions.length) return {kcal:0, sessions:[]};
+  const p=loadProfile();
   let total=0;
   sessions.forEach(s=>{
     if(s.type==='correr') total+=s.kcalQ||0;
     else if(s.type==='boxeo') total+=600;
     else if(s.type==='peses') total+=Math.round((s.duracio||60)*5);
+    else if(s.type==='caminar') total+=calcWalkingKcal(p.pes,s.km||0,s.minutes||0);
   });
   return {kcal:total, sessions};
 }
 
 function getAdjustedMacros(baseType, extraKcal){
-  const base={...MACROS[baseType]};
+  const base={...getMacros()[baseType]};
   if(extraKcal<=0) return base;
-  // Extra kcal split: 60% CH, 20% prot, 20% greix
   const extraCH=Math.round(extraKcal*0.60/4);
   const extraProt=Math.round(extraKcal*0.20/4);
   const extraGreix=Math.round(extraKcal*0.20/9);
@@ -741,6 +876,7 @@ function calcXP(registres, trainings, achievements){
     if(t.type==='correr') xp+=Math.round((t.km||0)*10);
     else if(t.type==='boxeo') xp+=60;
     else if(t.type==='peses') xp+=40;
+    else if(t.type==='caminar') xp+=30;
   });
   xp+=achievements.length*50;
   return xp;
@@ -794,6 +930,7 @@ function goPage(id,btn){
   if(id==='calendar') renderCalendar();
   if(id==='training') renderTraining();
   if(id==='stats') renderStats();
+  if(id==='perfil') renderPerfil();
 }
 
 // ═══════════════════════════════════════════
@@ -804,13 +941,16 @@ function renderDashboard(){
   const ds=dateStr(now);
   const dow=now.getDay();
   const type=getDayType(now);
-  const info=DAY_TYPE_INFO[type];
-  const base=MACROS[type];
+  const info=getDayTypeInfo(type);
+  const profile=loadProfile();
+  const macros=getMacros();
+  const base=macros[type];
   const registres=loadRegistres();
   const trainings=loadTrainings();
   const earned=checkAchievements(registres,trainings);
 
-  // Date
+  // Greeting + Date
+  document.getElementById('dashGreeting').textContent=`Hola, ${profile.nom} 🏃`;
   document.getElementById('dashDate').textContent=now.toLocaleDateString('ca-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
 
   // GAMIFICATION
@@ -818,9 +958,9 @@ function renderDashboard(){
   const level=getLevel(xp);
   const nextLevel=LEVELS[LEVELS.indexOf(level)+1]||level;
   const levelPct=level===LEVELS[LEVELS.length-1]?100:((xp-level.min)/(nextLevel.min-level.min)*100);
-  const lastPes=registres.length?registres[registres.length-1].pes:100;
-  const firstPes=registres.length?registres[0].pes:100;
-  const GOAL=88; const START=firstPes;
+  const lastPes=registres.length?registres[registres.length-1].pes:profile.pes;
+  const firstPes=registres.length?registres[0].pes:profile.pes;
+  const GOAL=profile.pesObjectiu||88; const START=firstPes;
   const milestones=[START,...Array.from({length:Math.ceil((START-GOAL)/2)},(_,i)=>START-2*(i+1)).filter(v=>v>GOAL),GOAL];
   const trackPct=Math.max(0,Math.min(100,((START-lastPes)/(START-GOAL)*100)));
 
@@ -913,10 +1053,11 @@ function renderDashboard(){
       <div class="macro-pill"><div class="val" style="color:var(--purple)">${adjMacros.greix}g</div><div class="lbl">Greix</div></div>
     </div>`;
 
+  const maxM=macros.cursa;
   const bars=[
-    {lbl:'Proteïna',val:adjMacros.prot,max:200,color:'var(--blue)'},
-    {lbl:'Carbohidrats',val:adjMacros.ch,max:380,color:'var(--yellow)'},
-    {lbl:'Greix',val:adjMacros.greix,max:80,color:'var(--purple)'},
+    {lbl:'Proteïna',val:adjMacros.prot,max:Math.max(maxM.prot,adjMacros.prot),color:'var(--blue)'},
+    {lbl:'Carbohidrats',val:adjMacros.ch,max:Math.max(maxM.ch,adjMacros.ch),color:'var(--yellow)'},
+    {lbl:'Greix',val:adjMacros.greix,max:Math.max(maxM.greix,adjMacros.greix),color:'var(--purple)'},
   ];
   document.getElementById('dashBars').innerHTML=bars.map(b=>`
     <div style="margin-top:6px">
@@ -961,11 +1102,12 @@ function renderDashboard(){
 
   // MEALS
   const plan=MEAL_PLAN[dow]||MEAL_PLAN[1];
+  const mealScale=base.kcal/(plan.kcal||2200);
   document.getElementById('dashMeals').innerHTML=plan.meals.map(m=>`
     <div class="meal-item">
       <div class="meal-time">${m.time}</div>
       <div class="meal-info"><div class="meal-name">${m.name}</div><div class="meal-desc">${m.desc}</div></div>
-      <div class="meal-kcal">${m.kcal} kcal</div>
+      <div class="meal-kcal">${Math.round(m.kcal*mealScale)} kcal</div>
     </div>`).join('');
 }
 
@@ -994,8 +1136,12 @@ function renderDiet(){
   }).join('');
 
   const plan=MEAL_PLAN[selectedDietDay]||MEAL_PLAN[1];
-  const info=DAY_TYPE_INFO[plan.type];
+  const info=getDayTypeInfo(plan.type);
+  const profile=loadProfile();
+  const dynMacros=getMacros()[plan.type]||getMacros().normal;
+  const scaleFactor=dynMacros.kcal/(plan.kcal||2200);
   const fullNames=['Diumenge','Dilluns','Dimarts','Dimecres','Dijous','Divendres','Dissabte'];
+  const bmr=calcBMR(profile);
 
   document.getElementById('dietDayBanner').innerHTML=`
     <div class="day-banner" style="background:${info.color}22;border:1px solid ${info.color}44">
@@ -1008,7 +1154,7 @@ function renderDiet(){
 
   // Training impact for today (only if selected day is today)
   const todayDow=today().getDay();
-  let adjMacros={...plan};
+  let adjMacros={...dynMacros};
   if(selectedDietDay===todayDow){
     const impact=calcTrainingImpact(trainings,ds);
     if(impact.kcal>0){
@@ -1018,7 +1164,7 @@ function renderDiet(){
           <div class="imp-icon">🔥</div>
           <div class="imp-info">
             <div class="imp-title" style="color:var(--green)">Entrenament avui: +${impact.kcal} kcal cremades</div>
-            <div class="imp-sub">Base ${plan.kcal} + entreno ${impact.kcal} = <strong>${adjMacros.kcal} kcal</strong> totals recomanades</div>
+            <div class="imp-sub">Base ${dynMacros.kcal} + entreno ${impact.kcal} = <strong>${adjMacros.kcal} kcal</strong> totals recomanades</div>
           </div>
         </div>`;
     } else {
@@ -1028,6 +1174,8 @@ function renderDiet(){
     document.getElementById('dietImpact').innerHTML='';
   }
 
+  const scalePct=Math.round((scaleFactor-1)*100);
+  const scaleLabel=scaleFactor!==1?` · Quantitats ${scaleFactor>1?'+':''}${scalePct}% vs. base`:'';
   document.getElementById('dietMacroCard').innerHTML=`
     <div class="card-title">MACROS DEL DIA</div>
     <div class="macro-row">
@@ -1037,20 +1185,23 @@ function renderDiet(){
       <div class="macro-pill"><div class="val" style="color:var(--purple)">${adjMacros.greix}g</div><div class="lbl">Greix</div></div>
     </div>
     <div style="font-size:11px;color:var(--text2);margin-top:6px">
-      Metabolisme basal: 1.888 kcal · ${adjMacros.kcal>1888?'Superàvit +':'Dèficit '}${Math.abs(adjMacros.kcal-1888)} kcal
+      Metabolisme basal: ${bmr} kcal · ${adjMacros.kcal>bmr?'Superàvit +':'Dèficit '}${Math.abs(adjMacros.kcal-bmr)} kcal${scaleLabel}
     </div>`;
 
+  const totalScaledKcal=Math.round(plan.meals.reduce((a,m)=>a+m.kcal,0)*scaleFactor);
   document.getElementById('dietMealsCard').innerHTML=`
-    <div class="card-title">ÀPATS (${plan.meals.length})</div>
+    <div class="card-title">ÀPATS (${plan.meals.length})${scaleFactor!==1?` · Factor ×${scaleFactor.toFixed(2)}`:''}
+      ${scaleFactor!==1?`<span style="font-size:10px;color:var(--text2);font-weight:400;margin-left:6px">Ajusta les quantitats ×${scaleFactor.toFixed(2)}</span>`:''}
+    </div>
     ${plan.meals.map(m=>`
       <div class="meal-item">
         <div class="meal-time">${m.time}</div>
         <div class="meal-info"><div class="meal-name">${m.name}</div><div class="meal-desc">${m.desc}</div></div>
-        <div class="meal-kcal">${m.kcal} kcal</div>
+        <div class="meal-kcal">${Math.round(m.kcal*scaleFactor)} kcal</div>
       </div>`).join('')}
     <div style="margin-top:10px;padding-top:8px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-weight:700;font-size:14px">
       <span>Total àpats</span>
-      <span style="color:var(--orange)">${plan.meals.reduce((a,m)=>a+m.kcal,0)} kcal</span>
+      <span style="color:var(--orange)">${totalScaledKcal} kcal</span>
     </div>`;
 }
 
@@ -1126,7 +1277,7 @@ function renderCalendarEvents(){
 function calDayClick(ds){
   const dt=parseDate(ds);
   const type=getDayType(dt);
-  const info=DAY_TYPE_INFO[type];
+  const info=getDayTypeInfo(type);
   const trainings=loadTrainings().filter(t=>t.date===ds);
   const race=getRaceForDate(ds);
   let msg=`${ds}: ${info.label}`;
@@ -1181,32 +1332,64 @@ let trainFilterType='tot';
 let trainChartType='sessions';
 
 function trainingCardHTML(t, showDelete){
-  const icons={peses:'💪',boxeo:'🥊',correr:'🏃'};
-  const colors={peses:'peses',boxeo:'boxeo',correr:'correr'};
-  let sub='';
-  if(t.type==='peses') sub=`${(t.muscles||[]).map(m=>MUSCLE_LABELS[m]).join(', ')||'—'} · ${t.duracio||60}min · ~${Math.round((t.duracio||60)*5)} kcal`;
-  if(t.type==='boxeo') sub=`1h sessió estàndard · ~600 kcal`;
-  if(t.type==='correr') sub=`${t.km||0} km · ${t.vel||0} km/h · ${t.kcalQ||0} kcal`;
-  return `<div class="training-card ${colors[t.type]}">
+  const icons={peses:'💪',boxeo:'🥊',correr:'🏃',caminar:'🚶'};
+  const colors={peses:'peses',boxeo:'boxeo',correr:'correr',caminar:'caminar'};
+  const p=loadProfile();
+  let sub='', kcalStr='';
+  if(t.type==='peses'){const k=Math.round((t.duracio||60)*5);sub=`${(t.muscles||[]).map(m=>MUSCLE_LABELS[m]).join(', ')||'—'} · ${t.duracio||60}min · ~${k} kcal`;kcalStr=k+' kcal';}
+  if(t.type==='boxeo'){sub=`1h sessió estàndard · ~600 kcal`;kcalStr='600 kcal';}
+  if(t.type==='correr'){sub=`${t.km||0} km · ${t.vel||0} km/h · ${t.kcalQ||0} kcal`;kcalStr=(t.kcalQ||0)+' kcal';}
+  if(t.type==='caminar'){const k=calcWalkingKcal(p.pes,t.km||0,t.minutes||0);sub=`${t.km||0} km · ${t.minutes||0} min · ~${k} kcal`;kcalStr=k+' kcal';}
+  return `<div class="training-card ${colors[t.type]||''}">
     <div class="training-icon">${icons[t.type]||'💪'}</div>
     <div class="training-info">
       <div class="training-title">${t.type.charAt(0).toUpperCase()+t.type.slice(1)} · ${t.date}</div>
       <div class="training-sub">${sub}${t.nota?' · '+t.nota:''}</div>
     </div>
     <div class="training-kcal">
-      ${t.type==='correr'?t.kcalQ+' kcal':t.type==='boxeo'?'600 kcal':Math.round((t.duracio||60)*5)+' kcal'}
+      ${kcalStr}
       ${showDelete?`<br><button class="btn btn-sm btn-red" onclick="deleteTraining('${t.id}')">✕</button>`:''}
     </div>
   </div>`;
 }
 
 function renderTraining(){
-  const trainings=loadTrainings().slice().reverse();
-  const filtered=trainFilterType==='tot'?trainings:trainings.filter(t=>t.type===trainFilterType);
+  const start=getWeekStart(weekOffset);
+  const end=getWeekEnd(weekOffset);
+  const isCurrentWeek=weekOffset===0;
+
+  // Week label
+  const fmt={day:'2-digit',month:'2-digit'};
+  const startStr=start.toLocaleDateString('ca-ES',fmt);
+  const endStr=end.toLocaleDateString('ca-ES',fmt);
+  document.getElementById('trainWeekLabel').textContent=
+    isCurrentWeek?`Aquesta setmana (${startStr} – ${endStr})`:
+    weekOffset===-1?`Setmana passada (${startStr} – ${endStr})`:
+    `${startStr} – ${endStr}`;
+  document.getElementById('trainWeekSub').textContent=
+    isCurrentWeek?'Setmana actual':'Historial';
+  // Disable next button if at current week
+  document.getElementById('weekNextBtn').style.opacity=isCurrentWeek?'.3':'1';
+  document.getElementById('weekNextBtn').disabled=isCurrentWeek;
+
+  const allTrainings=loadTrainings();
+  const weekTrainings=allTrainings.filter(t=>isInWeek(t.date,weekOffset));
+  const totalKcal=weekTrainings.reduce((a,t)=>{
+    const p=loadProfile();
+    if(t.type==='correr') return a+(t.kcalQ||0);
+    if(t.type==='boxeo') return a+600;
+    if(t.type==='peses') return a+Math.round((t.duracio||60)*5);
+    if(t.type==='caminar') return a+calcWalkingKcal(p.pes,t.km||0,t.minutes||0);
+    return a;
+  },0);
+  document.getElementById('trainWeekStats').textContent=
+    weekTrainings.length?`${weekTrainings.length} sessions · ${totalKcal} kcal cremades`:'Cap sessió registrada';
+
+  const filtered=trainFilterType==='tot'?weekTrainings:weekTrainings.filter(t=>t.type===trainFilterType);
   document.getElementById('trainingHistory').innerHTML=filtered.length?
-    filtered.map(t=>trainingCardHTML(t,true)).join(''):
+    filtered.slice().reverse().map(t=>trainingCardHTML(t,true)).join(''):
     `<div style="color:var(--text2);font-size:13px;text-align:center;padding:20px">
-      Sense sessions registrades.<br><button class="btn btn-green" style="margin-top:10px;width:auto;padding:10px 20px" onclick="openAddTraining()">+ Afegir primera sessió</button>
+      ${isCurrentWeek?'Comença la nova setmana! 💪<br><button class="btn btn-green" style="margin-top:10px;width:auto;padding:10px 20px" onclick="openAddTraining()">+ Afegir primera sessió</button>':'Cap sessió per a aquesta setmana'}
     </div>`;
   renderTrainingChart(trainChartType);
 }
@@ -1226,15 +1409,31 @@ function openAddTraining(){
   document.getElementById('tKm').value='';
   document.getElementById('tKcalQ').value='';
   document.getElementById('tVel').value='';
-  // Reset checkboxes
+  document.getElementById('tCaminarMin').value='';
+  document.getElementById('tCaminarKm').value='';
+  document.getElementById('caminarKcalPreview').textContent='';
   document.querySelectorAll('#muscleChecks input').forEach(cb=>{cb.checked=false;cb.closest('.check-item').classList.remove('checked');});
   selectTrainType('peses');
   document.getElementById('overlayTraining').classList.remove('hidden');
 }
 
+function updateCaminarKcal(){
+  const min=parseFloat(document.getElementById('tCaminarMin').value)||0;
+  const km=parseFloat(document.getElementById('tCaminarKm').value)||0;
+  const p=loadProfile();
+  const k=calcWalkingKcal(p.pes,km,min);
+  const el=document.getElementById('caminarKcalPreview');
+  if(min>0&&km>0){
+    const pace=km/(min/60);
+    el.textContent=`~${k} kcal cremades · ${pace.toFixed(1)} km/h`;
+  } else {
+    el.textContent='Introdueix temps i distància';
+  }
+}
+
 function selectTrainType(type){
   selectedTrainType=type;
-  ['peses','boxeo','correr'].forEach(t=>{
+  ['peses','boxeo','correr','caminar'].forEach(t=>{
     document.getElementById('tb'+t.charAt(0).toUpperCase()+t.slice(1)).className=
       `type-btn${type===t?' active-'+t:''}`;
     document.getElementById('tFields'+t.charAt(0).toUpperCase()+t.slice(1)).style.display=
@@ -1265,6 +1464,11 @@ function saveTraining(){
     t.vel=parseFloat(document.getElementById('tVel').value)||0;
     if(!t.km){showToast('⚠️ Omple els km');return;}
   }
+  if(selectedTrainType==='caminar'){
+    t.minutes=parseInt(document.getElementById('tCaminarMin').value)||0;
+    t.km=parseFloat(document.getElementById('tCaminarKm').value)||0;
+    if(!t.minutes||!t.km){showToast('⚠️ Omple temps i km');return;}
+  }
 
   const trainings=loadTrainings();
   trainings.push(t);
@@ -1275,7 +1479,8 @@ function saveTraining(){
 
   closeModal('overlayTraining');
   renderTraining();
-  showToast(`✅ Sessió ${selectedTrainType} desada! +${selectedTrainType==='correr'?t.km*10:selectedTrainType==='boxeo'?60:40} XP`);
+  const xpStr=selectedTrainType==='correr'?t.km*10+'XP':selectedTrainType==='boxeo'?'60 XP':selectedTrainType==='caminar'?'30 XP':'40 XP';
+  showToast(`✅ Sessió ${selectedTrainType} desada! +${xpStr}`);
 }
 
 function deleteTraining(id){
@@ -1298,13 +1503,12 @@ function renderTrainingChart(type){
   const ctx=document.getElementById('cTraining');
 
   if(type==='sessions'){
-    // Stacked bar: sessions per week by type
     const weekMap={};
     trainings.forEach(t=>{
       const d=parseDate(t.date);
       const mon=new Date(d);mon.setDate(d.getDate()-(d.getDay()||7)+1);
       const wk=dateStr(mon);
-      if(!weekMap[wk]) weekMap[wk]={peses:0,boxeo:0,correr:0};
+      if(!weekMap[wk]) weekMap[wk]={peses:0,boxeo:0,correr:0,caminar:0};
       weekMap[wk][t.type]=(weekMap[wk][t.type]||0)+1;
     });
     const weeks=Object.keys(weekMap).sort().slice(-12);
@@ -1314,19 +1518,22 @@ function renderTrainingChart(type){
         {label:'💪 Peses',data:weeks.map(w=>weekMap[w].peses||0),backgroundColor:'#3b82f6aa'},
         {label:'🥊 Boxeo',data:weeks.map(w=>weekMap[w].boxeo||0),backgroundColor:'#ef4444aa'},
         {label:'🏃 Córrer',data:weeks.map(w=>weekMap[w].correr||0),backgroundColor:'#22c55eaa'},
+        {label:'🚶 Caminar',data:weeks.map(w=>weekMap[w].caminar||0),backgroundColor:'#eab308aa'},
       ]
     },options:{...CHART_DEFAULTS,scales:{...CHART_DEFAULTS.scales,x:{...CHART_DEFAULTS.scales.x,stacked:true},y:{...CHART_DEFAULTS.scales.y,stacked:true}},plugins:{legend:{display:true,labels:{color:'#f1f5f9',font:{size:11}}}}}});
   }
 
   if(type==='kcal'){
+    const p=loadProfile();
     const filtered=trainFilterType==='tot'?trainings:trainings.filter(t=>t.type===trainFilterType);
     const labels=filtered.map(t=>t.date.slice(5));
     const data=filtered.map(t=>{
       if(t.type==='correr') return t.kcalQ||0;
       if(t.type==='boxeo') return 600;
+      if(t.type==='caminar') return calcWalkingKcal(p.pes,t.km||0,t.minutes||0);
       return Math.round((t.duracio||60)*5);
     });
-    const colors=filtered.map(t=>t.type==='correr'?'#22c55e':t.type==='boxeo'?'#ef4444':'#3b82f6');
+    const colors=filtered.map(t=>t.type==='correr'?'#22c55e':t.type==='boxeo'?'#ef4444':t.type==='caminar'?'#eab308':'#3b82f6');
     chartInst['cTraining']=new Chart(ctx,{type:'bar',data:{labels,datasets:[{label:'Kcal cremades',data,backgroundColor:colors}]},options:{...CHART_DEFAULTS,plugins:{legend:{display:false}}}});
   }
 
@@ -1356,16 +1563,20 @@ function statsTab(tab,btn){
 
 function renderStats(){
   document.getElementById('rDate').value=dateStr(today());
+  const p=loadProfile();
+  document.getElementById('imcHint').textContent=`IMC calculat automàticament (alçada ${p.alcada} cm)`;
   renderRegistreTable();
 }
 
 function renderRegistreTable(){
   const registres=loadRegistres();
+  const p=loadProfile();
+  const alcadaM=(p.alcada||180)/100;
   const tbody=document.getElementById('registreTbody');
   if(!registres.length){tbody.innerHTML=`<tr><td colspan="7" style="color:var(--text2);text-align:center;padding:16px">Sense entrades</td></tr>`;return;}
   tbody.innerHTML=[...registres].reverse().map((r,i)=>{
     const idx=registres.length-1-i;
-    const imc=r.imc||(r.pes/3.24).toFixed(1);
+    const imc=r.imc||parseFloat((r.pes/(alcadaM*alcadaM)).toFixed(1));
     return `<tr>
       <td>${r.date}</td>
       <td><strong>${r.pes}</strong></td>
@@ -1382,7 +1593,9 @@ function saveRegistre(){
   const date=document.getElementById('rDate').value;
   const pes=parseFloat(document.getElementById('rPes').value);
   if(!date||isNaN(pes)){showToast('⚠️ Omple data i pes');return;}
-  const imc=parseFloat((pes/3.24).toFixed(1));
+  const p=loadProfile();
+  const alcadaM=(p.alcada||180)/100;
+  const imc=parseFloat((pes/(alcadaM*alcadaM)).toFixed(1));
   const entry={
     date, pes, imc,
     greig: parseFloat(document.getElementById('rGreix').value)||null,
@@ -1427,26 +1640,22 @@ function renderBodyChart(type){
   document.getElementById('bodyChartTitle').textContent=titles[type]||'';
 
   if(type==='pes'){
+    const p=loadProfile();
+    const GOAL=p.pesObjectiu||88;
     const pesData=registres.map(r=>r.pes);
-    const last=pesData[pesData.length-1]||100;
-    const GOAL=88;
-    const first=pesData[0]||100;
-    const dFrom=parseDate(registres[registres.length-1]?.date||dateStr(today()));
-    const dTo=parseDate('2027-01-24');
-    const totalDays=daysBetween(dFrom,dTo);
-    const projLabels=[...labels,'10-31','01-24'];
-    const uniqueProj=[...new Set(projLabels)];
+    const last=pesData[pesData.length-1]||p.pes;
+    const first=pesData[0]||p.pes;
     chartInst['cBody']=new Chart(ctx,{type:'line',data:{
       labels,
       datasets:[
         {label:'Pes real',data:pesData,borderColor:'#22c55e',backgroundColor:'#22c55e33',fill:true,tension:.3,pointRadius:5},
-        {label:'Objectiu',data:labels.map(()=>GOAL),borderColor:'#f97316',borderDash:[5,3],fill:false,pointRadius:0,borderWidth:2},
+        {label:`Objectiu ${GOAL}kg`,data:labels.map(()=>GOAL),borderColor:'#f97316',borderDash:[5,3],fill:false,pointRadius:0,borderWidth:2},
       ]
     },options:{...CHART_DEFAULTS,plugins:{legend:{display:true,labels:{color:'#f1f5f9',font:{size:11}}}}}});
-    const pct=Math.max(0,Math.min(100,((first-last)/(first-GOAL)*100)));
+    const pct=first>GOAL?Math.max(0,Math.min(100,((first-last)/(first-GOAL)*100))):0;
     document.getElementById('bodyChartExtra').innerHTML=`
       <div class="progress-section">
-        <div class="prog-row"><span>Progrés cap a 88 kg</span><span>${last} kg (resta ${(last-GOAL).toFixed(1)} kg)</span></div>
+        <div class="prog-row"><span>Progrés cap a ${GOAL} kg</span><span>${last} kg (resta ${(last-GOAL).toFixed(1)} kg)</span></div>
         <div class="prog-bar"><div class="prog-fill" style="width:${pct.toFixed(0)}%;background:var(--green)"></div></div>
       </div>`;
   }
@@ -1503,24 +1712,160 @@ function renderBodyChart(type){
   }
 
   if(type==='imc'){
+    const p=loadProfile();
+    const alcadaM=(p.alcada||180)/100;
+    const goalImc=parseFloat((p.pesObjectiu/(alcadaM*alcadaM)).toFixed(1));
     chartInst['cBody']=new Chart(ctx,{type:'line',data:{
       labels,datasets:[
-        {label:'IMC',data:registres.map(r=>r.imc||(r.pes/3.24).toFixed(1)),borderColor:'#a855f7',backgroundColor:'#a855f733',fill:true,tension:.3,pointRadius:5},
+        {label:'IMC',data:registres.map(r=>r.imc||parseFloat((r.pes/(alcadaM*alcadaM)).toFixed(1))),borderColor:'#a855f7',backgroundColor:'#a855f733',fill:true,tension:.3,pointRadius:5},
         {label:'Normopès (<25)',data:labels.map(()=>25),borderColor:'#22c55e',borderDash:[5,3],fill:false,pointRadius:0},
-        {label:'Objectiu (27.2)',data:labels.map(()=>27.2),borderColor:'#f97316',borderDash:[3,3],fill:false,pointRadius:0},
+        {label:`Objectiu (${goalImc})`,data:labels.map(()=>goalImc),borderColor:'#f97316',borderDash:[3,3],fill:false,pointRadius:0},
       ]
     },options:{...CHART_DEFAULTS,plugins:{legend:{display:true,labels:{color:'#f1f5f9',font:{size:11}}}}}});
     const last=registres[registres.length-1];
-    const imc=last?(last.imc||(last.pes/3.24).toFixed(1)):'—';
+    const imc=last?(last.imc||parseFloat((last.pes/(alcadaM*alcadaM)).toFixed(1))):'—';
     document.getElementById('bodyChartExtra').innerHTML=`
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
         <div class="stat-box"><div class="val" style="color:var(--purple)">${imc}</div><div class="lbl">IMC actual</div></div>
-        <div class="stat-box"><div class="val" style="color:var(--green)">27.2</div><div class="lbl">IMC a 88kg</div></div>
+        <div class="stat-box"><div class="val" style="color:var(--green)">${goalImc}</div><div class="lbl">IMC a ${p.pesObjectiu}kg</div></div>
       </div>
       <div style="font-size:11px;color:var(--text2);margin-top:8px;text-align:center">
         &lt;18.5 Baix pes · 18.5–25 Normal · 25–30 Sobrepès · &gt;30 Obesitat
       </div>`;
   }
+}
+
+// ═══════════════════════════════════════════
+// PERFIL PAGE
+// ═══════════════════════════════════════════
+let _kcalMode='auto';
+
+function setKcalMode(mode){
+  _kcalMode=mode;
+  document.getElementById('kcalAutoFields').style.display=mode==='auto'?'block':'none';
+  document.getElementById('kcalManualFields').style.display=mode==='manual'?'block':'none';
+  document.getElementById('btnModeAuto').className='btn btn-sm '+(mode==='auto'?'btn-green':'btn-ghost');
+  document.getElementById('btnModeManual').className='btn btn-sm '+(mode==='manual'?'btn-green':'btn-ghost');
+  updatePerfilCalc();
+}
+
+function renderPerfil(){
+  const p=loadProfile();
+  document.getElementById('pNom').value=p.nom||'';
+  document.getElementById('pSexe').value=p.sexe||'home';
+  document.getElementById('pPes').value=p.pes||'';
+  document.getElementById('pAlcada').value=p.alcada||'';
+  document.getElementById('pEdat').value=p.edat||'';
+  document.getElementById('pActivitat').value=p.activitat||'moderat';
+  document.getElementById('pObjectiu').value=p.objectiu||'perdre';
+  document.getElementById('pDeficit').value=p.deficit||400;
+  document.getElementById('pKcalManual').value=p.kcalManual||'';
+  document.getElementById('pPesObj').value=p.pesObjectiu||88;
+  _kcalMode=p.kcalMode||'auto';
+  setKcalMode(_kcalMode);
+}
+
+function updatePerfilCalc(){
+  const mode=_kcalMode;
+  const p={
+    sexe:document.getElementById('pSexe').value,
+    pes:parseFloat(document.getElementById('pPes').value)||100,
+    alcada:parseFloat(document.getElementById('pAlcada').value)||180,
+    edat:parseInt(document.getElementById('pEdat').value)||40,
+    activitat:document.getElementById('pActivitat').value,
+    objectiu:document.getElementById('pObjectiu').value,
+    deficit:parseInt(document.getElementById('pDeficit').value)||400,
+    pesObjectiu:parseFloat(document.getElementById('pPesObj').value)||88,
+    kcalMode:mode,
+    kcalManual:mode==='manual'?parseInt(document.getElementById('pKcalManual').value)||0:0,
+  };
+  const bmr=calcBMR(p);
+  const tdee=calcTDEE(p);
+  const norm=calcNormalKcal(p);
+  const deficit=tdee-norm;
+  const deficitPct=Math.round(Math.abs(deficit)/tdee*100);
+  const m=calcMacros(p);
+
+  // Top summary card
+  document.getElementById('perfilCalcCard').innerHTML=`
+    <div class="card-title">RESUM CALÒRIC</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">
+      <div class="stat-box"><div class="val" style="color:var(--blue);font-size:18px">${bmr}</div><div class="lbl">BMR (basal)</div></div>
+      <div class="stat-box"><div class="val" style="color:var(--orange);font-size:18px">${tdee}</div><div class="lbl">TDEE (amb activitat)</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+      <div class="stat-box"><div class="val" style="color:var(--green);font-size:16px">${m.normal?.kcal||norm}</div><div class="lbl">Dia normal</div></div>
+      <div class="stat-box"><div class="val" style="color:var(--purple);font-size:16px">${m.carrega?.kcal||0}</div><div class="lbl">Càrrega CH</div></div>
+      <div class="stat-box"><div class="val" style="color:var(--red);font-size:16px">${m.cursa?.kcal||0}</div><div class="lbl">Dia cursa</div></div>
+    </div>`;
+
+  // Deficit banner
+  const isDeficit=deficit>0;
+  const isSurplus=deficit<0;
+  const bannerColor=isDeficit?'var(--orange)':isSurplus?'var(--green)':'var(--blue)';
+  const bannerBg=isDeficit?'#f9731611':isSurplus?'#22c55e11':'#3b82f611';
+  let bannerText='';
+  if(isDeficit) bannerText=`🔻 Retallant <strong>${deficit} kcal</strong> del recomanat (${deficitPct}% del TDEE)<br><span style="font-size:11px;opacity:.8">TDEE ${tdee} - ${deficit} kcal = <strong>${norm} kcal/dia</strong></span>`;
+  else if(isSurplus) bannerText=`📈 Superàvit de <strong>${Math.abs(deficit)} kcal</strong> sobre el TDEE (${deficitPct}%)<br><span style="font-size:11px;opacity:.8">TDEE ${tdee} + ${Math.abs(deficit)} kcal = <strong>${norm} kcal/dia</strong></span>`;
+  else bannerText=`⚖️ Manteniment — objectiu = TDEE: <strong>${norm} kcal/dia</strong>`;
+  document.getElementById('kcalDeficitBanner').innerHTML=`<div style="color:${bannerColor};font-size:13px;font-weight:700">${bannerText}</div>`;
+  document.getElementById('kcalDeficitBanner').style.background=bannerBg;
+  document.getElementById('kcalDeficitBanner').style.border=`1px solid ${bannerColor}44`;
+}
+
+function savePerfilPage(){
+  const mode=_kcalMode;
+  const p={
+    nom:document.getElementById('pNom').value.trim()||'Daniel',
+    sexe:document.getElementById('pSexe').value,
+    pes:parseFloat(document.getElementById('pPes').value)||100,
+    alcada:parseFloat(document.getElementById('pAlcada').value)||180,
+    edat:parseInt(document.getElementById('pEdat').value)||40,
+    activitat:document.getElementById('pActivitat').value,
+    objectiu:document.getElementById('pObjectiu').value,
+    deficit:parseInt(document.getElementById('pDeficit').value)||400,
+    pesObjectiu:parseFloat(document.getElementById('pPesObj').value)||88,
+    kcalMode:mode,
+    kcalManual:mode==='manual'?parseInt(document.getElementById('pKcalManual').value)||0:0,
+  };
+  saveProfileData(p);
+  showToast(`✅ Perfil desat! ${calcNormalKcal(p)} kcal/dia`);
+}
+
+// ═══════════════════════════════════════════
+// WEEKLY TRAINING
+// ═══════════════════════════════════════════
+let weekOffset=0;
+
+function getWeekStart(offset){
+  const now=today();
+  const dow=(now.getDay()+6)%7; // Mon=0 ... Sun=6
+  const mon=new Date(now);
+  mon.setDate(now.getDate()-dow+offset*7);
+  mon.setHours(0,0,0,0);
+  return mon;
+}
+
+function getWeekEnd(offset){
+  const start=getWeekStart(offset);
+  const end=new Date(start);
+  end.setDate(start.getDate()+6);
+  end.setHours(23,59,59,999);
+  return end;
+}
+
+function weekNav(delta){
+  const newOffset=weekOffset+delta;
+  if(newOffset>0) return; // can't go into future
+  weekOffset=newOffset;
+  renderTraining();
+}
+
+function isInWeek(dateStr,offset){
+  const d=parseDate(dateStr);
+  const start=getWeekStart(offset);
+  const end=getWeekEnd(offset);
+  return d>=start&&d<=end;
 }
 
 // ═══════════════════════════════════════════
@@ -1535,7 +1880,7 @@ document.querySelectorAll('.overlay').forEach(o=>{
 // PWA / SERVICE WORKER
 // ═══════════════════════════════════════════
 const SW_CODE=`
-const CACHE='daniel-runner-v2';
+const CACHE='daniel-runner-v3';
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['./'])));self.skipWaiting();});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim();});
 self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(CACHE).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match('./'))));});
