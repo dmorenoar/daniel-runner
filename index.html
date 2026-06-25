@@ -300,6 +300,13 @@ nav{
 .shop-name.checked{text-decoration:line-through;opacity:.45}
 .shop-qty{font-size:11px;color:var(--blue);font-weight:700;margin-top:2px}
 .shop-note{font-size:10px;color:var(--text2);margin-top:1px}
+/* ── BARCODE SCANNER ── */
+.barcode-video-wrap{position:relative;border-radius:12px;overflow:hidden;background:#000;margin-bottom:12px}
+.barcode-video-wrap video{width:100%;height:220px;object-fit:cover;display:block}
+.barcode-overlay-border{position:absolute;inset:0;border:3px solid var(--green);border-radius:12px;pointer-events:none}
+.barcode-target-box{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:200px;height:65px;border:2px solid var(--green);border-radius:4px;pointer-events:none;box-shadow:0 0 0 2000px #0007}
+/* ── SUPPLEMENT DOSE CONFIG ── */
+.supl-dose-row{background:var(--bg3);border-radius:12px;padding:10px 12px;margin-bottom:8px;border-left:3px solid var(--green)}
 </style>
 </head>
 <body>
@@ -669,6 +676,31 @@ nav{
     <div class="form-group"><label>Nota</label><input type="text" class="form-control" id="tNota" placeholder="Sensació, observacions..."></div>
     <button class="btn btn-green" onclick="saveTraining()" style="margin-bottom:8px">✅ Desar sessió</button>
     <button class="btn btn-ghost" onclick="closeModal('overlayTraining')">Cancel·lar</button>
+  </div>
+</div>
+
+<!-- Barcode Scanner Modal -->
+<div class="overlay hidden" id="overlayBarcode">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">📷 Escanejar Producte</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Suplement: <strong id="barcodeSuplTarget"></strong></div>
+    <div id="barcodeVideoWrap" class="barcode-video-wrap" style="display:none">
+      <video id="barcodeVideo" autoplay muted playsinline></video>
+      <div class="barcode-overlay-border"></div>
+      <div class="barcode-target-box"></div>
+      <button onclick="stopBarcodeCamera()" style="position:absolute;top:8px;right:8px;background:#000a;border:1px solid #fff5;color:#fff;border-radius:8px;padding:4px 12px;font-size:13px;font-weight:700;cursor:pointer">✕ Atura</button>
+    </div>
+    <div class="form-group">
+      <label>Codi de barres EAN-13 / EAN-8 / UPC</label>
+      <div style="display:flex;gap:8px">
+        <input type="text" class="form-control" id="barcodeInput" placeholder="ex: 5060370540284" inputmode="numeric" style="flex:1">
+        <button class="btn btn-ghost btn-sm" onclick="startBarcodeCamera()" style="padding:0 14px;white-space:nowrap;font-size:16px">📷</button>
+      </div>
+    </div>
+    <button class="btn btn-blue" onclick="lookupBarcode(document.getElementById('barcodeInput').value.trim())" style="margin-bottom:14px;width:100%">🔍 Buscar a Open Food Facts</button>
+    <div id="barcodeResult"></div>
+    <button class="btn btn-ghost" onclick="closeBarcodeModal()" style="margin-top:8px;width:100%">Cancel·lar</button>
   </div>
 </div>
 
@@ -1118,6 +1150,192 @@ function updateShopProgress(){
   `;
 }
 
+// ── SUPPLEMENT DOSES ──
+function loadSuplDoses(){return JSON.parse(localStorage.getItem('dr_supl_doses')||'{}');}
+function saveSuplDoses(d){localStorage.setItem('dr_supl_doses',JSON.stringify(d));}
+function loadSuplProducts(){return JSON.parse(localStorage.getItem('dr_supl_products')||'{}');}
+function saveSuplProducts(d){localStorage.setItem('dr_supl_products',JSON.stringify(d));}
+
+const SUPL_DEF_DOSE={vit_d:{dose:1000,unit:'UI'},vit_c:{dose:500,unit:'mg'},vit_b12:{dose:500,unit:'µg'},b_complex:{dose:1,unit:'càpsules'},magnesium:{dose:300,unit:'mg'},omega3:{dose:1000,unit:'mg'},collagen:{dose:10,unit:'g'},zinc:{dose:15,unit:'mg'},iron:{dose:14,unit:'mg'},calcium:{dose:400,unit:'mg'},creatine:{dose:3,unit:'g'},whey:{dose:25,unit:'g'},bcaa:{dose:5,unit:'g'},melatonin:{dose:1,unit:'mg'}};
+
+function getSuplDefault(id,f){const d=SUPL_DEF_DOSE[id]||{dose:100,unit:'mg'};return d[f];}
+
+function updateSuplDose(suplId,field,value){
+  const doses=loadSuplDoses();
+  if(!doses[suplId]) doses[suplId]={pills:1,dose:getSuplDefault(suplId,'dose'),unit:getSuplDefault(suplId,'unit'),productName:'',ean:''};
+  if(field==='pills') doses[suplId].pills=parseFloat(value)||1;
+  if(field==='dose') doses[suplId].dose=parseFloat(value)||0;
+  if(field==='unit') doses[suplId].unit=value;
+  saveSuplDoses(doses);
+  renderSuplSummary();
+}
+
+// ── BARCODE SCANNER ──
+let _barcodeTargetSupl=null,_scanStream=null,_scanInterval=null,_lastBarcodeResult=null;
+
+function openBarcodeModal(suplId){
+  _barcodeTargetSupl=suplId;
+  const s=SUPPLEMENTS_DEF.find(x=>x.id===suplId);
+  document.getElementById('barcodeSuplTarget').textContent=s?s.icon+' '+s.name:'';
+  document.getElementById('barcodeInput').value='';
+  document.getElementById('barcodeResult').innerHTML='';
+  document.getElementById('barcodeVideoWrap').style.display='none';
+  _lastBarcodeResult=null;
+  document.getElementById('overlayBarcode').classList.remove('hidden');
+}
+
+function closeBarcodeModal(){
+  stopBarcodeCamera();
+  document.getElementById('overlayBarcode').classList.add('hidden');
+  _lastBarcodeResult=null;
+}
+
+async function startBarcodeCamera(){
+  if(!navigator.mediaDevices?.getUserMedia){showToast('Càmera no disponible');return;}
+  try{
+    const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}});
+    const video=document.getElementById('barcodeVideo');
+    video.srcObject=stream;
+    document.getElementById('barcodeVideoWrap').style.display='block';
+    _scanStream=stream;
+    if('BarcodeDetector' in window){
+      const det=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e']});
+      _scanInterval=setInterval(async()=>{
+        try{
+          const codes=await det.detect(video);
+          if(codes.length>0){
+            const code=codes[0].rawValue;
+            document.getElementById('barcodeInput').value=code;
+            stopBarcodeCamera();
+            lookupBarcode(code);
+          }
+        }catch(e){}
+      },300);
+    } else {
+      document.getElementById('barcodeResult').innerHTML='<div style="background:#eab30822;border:1px solid var(--yellow);border-radius:10px;padding:10px;font-size:12px;margin-bottom:10px">⚠️ El teu navegador no suporta escaneig automàtic. Pren nota del codi i introdueix-lo manualment.</div>';
+    }
+  }catch(e){showToast('Càmera: '+e.message);}
+}
+
+function stopBarcodeCamera(){
+  if(_scanInterval){clearInterval(_scanInterval);_scanInterval=null;}
+  if(_scanStream){_scanStream.getTracks().forEach(t=>t.stop());_scanStream=null;}
+  const w=document.getElementById('barcodeVideoWrap');
+  if(w) w.style.display='none';
+}
+
+function parseOpenFoodFacts(n){
+  const MAP={'vitamin-d':'Vitamina D3','vitamin-c':'Vitamina C','vitamin-e':'Vitamina E','vitamin-k':'Vitamina K','vitamin-b12':'Vitamina B12','vitamin-b6':'Vitamina B6','vitamin-b1':'Vitamina B1','vitamin-b2':'Vitamina B2','folates':'Àcid fòlic (B9)','magnesium':'Magnesi','zinc':'Zinc','iron':'Ferro','calcium':'Calci','phosphorus':'Fòsfor','potassium':'Potassi','selenium':'Seleni','omega-3-fat':'Omega-3','epa':'EPA','dha':'DHA','proteins':'Proteïnes','creatine':'Creatina','caffeine':'Cafeïna'};
+  const rows=[];const seen=new Set();
+  Object.keys(n).forEach(key=>{
+    if(!key.endsWith('_serving')) return;
+    const base=key.slice(0,-8);
+    if(!MAP[base]||seen.has(base)) return;
+    const val=n[key];
+    if(val===undefined||val===null||val==='') return;
+    seen.add(base);
+    const unit=n[base+'_unit']||'mg';
+    const p100=n[base+'_100g'];
+    rows.push({base,label:MAP[base],serving:val+' '+unit,per100:p100!=null?p100+' '+unit:'-',value:parseFloat(val)||0,unit});
+  });
+  return rows;
+}
+
+async function lookupBarcode(ean){
+  if(!ean){showToast('Introdueix un codi EAN');return;}
+  const el=document.getElementById('barcodeResult');
+  el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text2)">🔍 Buscant a Open Food Facts...</div>';
+  try{
+    const r=await fetch('https://world.openfoodfacts.org/api/v0/product/'+ean+'.json');
+    const data=await r.json();
+    if(data.status===0||!data.product){
+      el.innerHTML='<div style="text-align:center;padding:16px;color:var(--red)">❌ Producte no trobat (EAN: '+ean+')<br><span style="font-size:11px;color:var(--text2)">El producte pot no estar a la base de dades.<br>Introdueix les dades manualment.</span></div>';
+      return;
+    }
+    const p=data.product;
+    const nutRows=parseOpenFoodFacts(p.nutriments||{});
+    _lastBarcodeResult={ean,name:p.product_name||'',brand:p.brands||'',servingSize:p.serving_size||'',nutRows};
+    const prods=loadSuplProducts();
+    prods[ean]={ean,name:p.product_name,brand:p.brands,servingSize:p.serving_size,nutRows};
+    saveSuplProducts(prods);
+    const tgt=document.getElementById('barcodeSuplTarget').textContent;
+    el.innerHTML=`
+      <div style="background:var(--bg3);border-radius:12px;padding:12px;margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700;margin-bottom:2px">${p.product_name||'Sense nom'}</div>
+        <div style="font-size:11px;color:var(--text2);margin-bottom:10px">${p.brands||''} · EAN: ${ean}${p.serving_size?' · Ració: '+p.serving_size:''}</div>
+        ${nutRows.length>0?`<div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Nutrient</th><th>Per ració</th><th>Per 100g</th></tr></thead><tbody>${nutRows.map(r=>'<tr><td>'+r.label+'</td><td style="color:var(--orange);font-weight:700">'+r.serving+'</td><td>'+r.per100+'</td></tr>').join('')}</tbody></table></div>`:'<div style="color:var(--text2);font-size:12px;padding:8px 0">ℹ️ No s\'han trobat dades de vitamines/minerals detallades.</div>'}
+      </div>
+      <button class="btn btn-green" onclick="applyLastProductToSupl()" style="width:100%">✅ Assignar a ${tgt}</button>`;
+  }catch(e){
+    el.innerHTML='<div style="text-align:center;padding:16px;color:var(--red)">❌ Error de connexió.<br><span style="font-size:11px;color:var(--text2)">'+e.message+'</span></div>';
+  }
+}
+
+function applyLastProductToSupl(){
+  if(!_lastBarcodeResult||!_barcodeTargetSupl){showToast('Cap producte seleccionat');return;}
+  const{ean,name,nutRows}=_lastBarcodeResult;
+  const doses=loadSuplDoses();
+  if(!doses[_barcodeTargetSupl]) doses[_barcodeTargetSupl]={pills:1,dose:getSuplDefault(_barcodeTargetSupl,'dose'),unit:getSuplDefault(_barcodeTargetSupl,'unit'),productName:'',ean:''};
+  doses[_barcodeTargetSupl].productName=name||'';
+  doses[_barcodeTargetSupl].ean=ean;
+  if(nutRows.length>0){doses[_barcodeTargetSupl].dose=nutRows[0].value;doses[_barcodeTargetSupl].unit=nutRows[0].unit;}
+  saveSuplDoses(doses);
+  closeBarcodeModal();
+  renderPerfilSupplements();
+  showToast('✅ '+(name||'Producte')+' assignat');
+}
+
+function renderSuplDoses(active){
+  const doses=loadSuplDoses();
+  return SUPPLEMENTS_DEF.filter(s=>active.includes(s.id)).map(s=>{
+    const d=doses[s.id]||{pills:1,dose:getSuplDefault(s.id,'dose'),unit:getSuplDefault(s.id,'unit'),productName:'',ean:''};
+    const total=Math.round((d.pills||1)*(d.dose||0)*100)/100;
+    const unit=d.unit||getSuplDefault(s.id,'unit');
+    return `<div class="supl-dose-row">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:700">${s.icon} ${s.name}</div>
+        <button class="btn btn-ghost btn-sm" onclick="openBarcodeModal('${s.id}')" style="font-size:11px;padding:3px 10px">📷 EAN</button>
+      </div>
+      ${d.productName?`<div style="font-size:10px;color:var(--green);margin-bottom:8px">📦 ${d.productName}${d.ean?' (EAN: '+d.ean+')':''}</div>`:''}
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+        <div class="form-group" style="margin-bottom:0">
+          <label style="font-size:9px">PRESES/DIA</label>
+          <input type="number" min="0.5" step="0.5" class="form-control" value="${d.pills||1}" onchange="updateSuplDose('${s.id}','pills',this.value)" style="font-size:13px;padding:6px 8px">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label style="font-size:9px">DOSI/PRESA</label>
+          <input type="number" min="0" step="any" class="form-control" value="${d.dose!==undefined?d.dose:getSuplDefault(s.id,'dose')}" onchange="updateSuplDose('${s.id}','dose',this.value)" style="font-size:13px;padding:6px 8px">
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label style="font-size:9px">UNITAT</label>
+          <select class="form-control" onchange="updateSuplDose('${s.id}','unit',this.value)" style="font-size:12px;padding:6px 4px">
+            ${['mg','µg','g','UI','ml','càpsules'].map(u=>`<option ${unit===u?'selected':''}>${u}</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div style="text-align:right;font-size:11px;color:var(--orange);font-weight:700;margin-top:5px">Total/dia: <strong>${total} ${unit}</strong></div>
+    </div>`;
+  }).join('');
+}
+
+function renderSuplSummary(){
+  const active=loadSupplements();
+  const doses=loadSuplDoses();
+  const el=document.getElementById('suplSummaryTable');
+  if(!el) return;
+  if(active.length===0){el.innerHTML='<div style="text-align:center;padding:12px;color:var(--text2);font-size:12px">Activa suplements per veure el resum</div>';return;}
+  const rows=SUPPLEMENTS_DEF.filter(s=>active.includes(s.id)).map(s=>{
+    const d=doses[s.id]||{pills:1,dose:getSuplDefault(s.id,'dose'),unit:getSuplDefault(s.id,'unit')};
+    const pills=d.pills||1;
+    const dose=d.dose!==undefined?d.dose:getSuplDefault(s.id,'dose');
+    const unit=d.unit||getSuplDefault(s.id,'unit');
+    const daily=Math.round(pills*dose*100)/100;
+    const weekly=Math.round(daily*7*100)/100;
+    return '<tr><td><span style="font-size:13px">'+s.icon+'</span> <span style="font-size:11px">'+s.name+'</span></td><td style="color:var(--blue);font-size:11px">'+dose+' '+unit+'</td><td style="text-align:center;font-size:11px">'+pills+'</td><td style="color:var(--orange);font-weight:700;font-size:12px">'+daily+' '+unit+'</td><td style="color:var(--text2);font-size:11px">'+weekly+' '+unit+'</td></tr>';
+  }).join('');
+  el.innerHTML='<div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Suplement</th><th>Dosi/presa</th><th style="text-align:center">×/dia</th><th>Total dia</th><th>Total setmana</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+}
+
 function getAllRaces(){
   return [...BUILT_IN_RACES,...loadCustomRaces()];
 }
@@ -1333,13 +1551,6 @@ function renderPerfilSupplements(){
   const el=document.getElementById('perfilSuplCard');
   if(!el) return;
 
-  const statusRows=SUPPLEMENTS_DEF.filter(s=>active.includes(s.id)).map(s=>`
-    <div class="supl-status-row">
-      <div class="supl-dot"></div>
-      <div style="flex:1;font-size:12px;font-weight:700">${s.icon} ${s.name}</div>
-      <div style="font-size:10px;color:var(--text2)">${s.benefits[0]} · ${s.timing}</div>
-    </div>`).join('');
-
   el.innerHTML=`
     <div class="card-title">SUPLEMENTACIÓ</div>
     <div style="font-size:11px;color:var(--text2);margin-bottom:12px">Toca per activar/desactivar. Els actius apareixen al teu resum nutricional.</div>
@@ -1352,16 +1563,23 @@ function renderPerfilSupplements(){
           <div class="supl-dose">${s.dose}</div>
         </div>`).join('')}
     </div>
-    <div style="margin-top:14px">
-      <div class="card-title">ESTAT ACTUAL (${active.length}/${SUPPLEMENTS_DEF.length} actius)</div>
-      ${active.length===0
-        ?`<div style="text-align:center;padding:14px;color:var(--text2);font-size:13px">Cap suplement activat.<br>Selecciona els que prens diàriament.</div>`
-        :`<div style="background:var(--bg3);border-radius:12px;padding:10px 12px">${statusRows}</div>
-          <div style="font-size:11px;color:var(--text2);margin-top:8px;padding:8px 12px;background:#22c55e11;border:1px solid #22c55e33;border-radius:8px">
-            ✅ Prenent <strong>${active.length}</strong> suplements · Recorda: consulta sempre amb un professional sanitari
-          </div>`
-      }
-    `;
+    ${active.length>0?`
+    <div style="margin-top:16px">
+      <div class="card-title">CONFIGURACIÓ DE DOSI</div>
+      <div style="font-size:11px;color:var(--text2);margin-bottom:10px">Indica les preses per dia i la dosi. Prem 📷 EAN per escanejar el codi de barres del producte i importar les dades automàticament.</div>
+      ${renderSuplDoses(active)}
+    </div>
+    <div style="margin-top:16px">
+      <div class="card-title">RESUM DIARI I SETMANAL</div>
+      <div id="suplSummaryTable"></div>
+      <div style="font-size:10px;color:var(--text2);margin-top:8px;padding:8px;background:#22c55e11;border:1px solid #22c55e33;border-radius:8px">
+        ✅ Prenent <strong>${active.length}</strong> suplements · Consulta sempre un professional sanitari
+      </div>
+    </div>`
+    :`<div style="text-align:center;padding:14px;color:var(--text2);font-size:13px">Cap suplement activat.<br>Selecciona els que prens diàriament.</div>`}
+  `;
+
+  if(active.length>0) renderSuplSummary();
 }
 
 // ═══════════════════════════════════════════
