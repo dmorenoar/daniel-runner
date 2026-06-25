@@ -684,7 +684,7 @@ nav{
   <div class="sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-title">📷 Escanejar Producte</div>
-    <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Suplement: <strong id="barcodeSuplTarget"></strong></div>
+    <div id="barcodeSuplHeader" style="font-size:12px;color:var(--text2);margin-bottom:12px">Suplement: <strong id="barcodeSuplTarget"></strong></div>
     <div id="barcodeVideoWrap" class="barcode-video-wrap" style="display:none">
       <video id="barcodeVideo" autoplay muted playsinline></video>
       <div class="barcode-overlay-border"></div>
@@ -1187,14 +1187,31 @@ function updateSuplDose(suplId,field,value){
 let _barcodeTargetSupl=null,_scanStream=null,_scanInterval=null,_lastBarcodeResult=null;
 
 function openBarcodeModal(suplId){
-  _barcodeTargetSupl=suplId;
-  const s=SUPPLEMENTS_DEF.find(x=>x.id===suplId);
-  document.getElementById('barcodeSuplTarget').textContent=s?s.icon+' '+s.name:'';
+  _barcodeTargetSupl=suplId||null;
+  const s=suplId?SUPPLEMENTS_DEF.find(x=>x.id===suplId):null;
+  const hdr=document.getElementById('barcodeSuplHeader');
+  if(s){
+    hdr.innerHTML='Suplement: <strong>'+s.icon+' '+s.name+'</strong>';
+  } else {
+    hdr.innerHTML='<span style="color:var(--green);font-weight:700">Mode general</span> — el suplement s\'activarà automàticament';
+  }
   document.getElementById('barcodeInput').value='';
+  document.getElementById('amazonUrlInput').value='';
   document.getElementById('barcodeResult').innerHTML='';
   document.getElementById('barcodeVideoWrap').style.display='none';
   _lastBarcodeResult=null;
   document.getElementById('overlayBarcode').classList.remove('hidden');
+}
+
+function renderAssignSection(){
+  const cur=_barcodeTargetSupl||'vit_d';
+  return `<div class="form-group" style="margin-top:10px;margin-bottom:0">
+    <label style="font-size:10px">ASSIGNAR A SUPLEMENT (s'activarà automàticament)</label>
+    <select id="suplAssignSelect" class="form-control" style="font-size:13px">
+      ${SUPPLEMENTS_DEF.map(s=>'<option value="'+s.id+'"'+(s.id===cur?' selected':'')+'>'+s.icon+' '+s.name+'</option>').join('')}
+    </select>
+  </div>
+  <button class="btn btn-green" onclick="applyLastProductToSupl()" style="width:100%;margin-top:8px">✅ Assignar i activar suplement</button>`;
 }
 
 function closeBarcodeModal(){
@@ -1271,31 +1288,41 @@ async function lookupBarcode(ean){
     const prods=loadSuplProducts();
     prods[ean]={ean,name:p.product_name,brand:p.brands,servingSize:p.serving_size,nutRows};
     saveSuplProducts(prods);
-    const tgt=document.getElementById('barcodeSuplTarget').textContent;
     el.innerHTML=`
       <div style="background:var(--bg3);border-radius:12px;padding:12px;margin-bottom:10px">
         <div style="font-size:13px;font-weight:700;margin-bottom:2px">${p.product_name||'Sense nom'}</div>
         <div style="font-size:11px;color:var(--text2);margin-bottom:10px">${p.brands||''} · EAN: ${ean}${p.serving_size?' · Ració: '+p.serving_size:''}</div>
         ${nutRows.length>0?`<div style="overflow-x:auto"><table class="data-table"><thead><tr><th>Nutrient</th><th>Per ració</th><th>Per 100g</th></tr></thead><tbody>${nutRows.map(r=>'<tr><td>'+r.label+'</td><td style="color:var(--orange);font-weight:700">'+r.serving+'</td><td>'+r.per100+'</td></tr>').join('')}</tbody></table></div>`:'<div style="color:var(--text2);font-size:12px;padding:8px 0">ℹ️ No s\'han trobat dades de vitamines/minerals detallades.</div>'}
       </div>
-      <button class="btn btn-green" onclick="applyLastProductToSupl()" style="width:100%">✅ Assignar a ${tgt}</button>`;
+      ${renderAssignSection()}`;
   }catch(e){
     el.innerHTML='<div style="text-align:center;padding:16px;color:var(--red)">❌ Error de connexió.<br><span style="font-size:11px;color:var(--text2)">'+e.message+'</span></div>';
   }
 }
 
 function applyLastProductToSupl(){
-  if(!_lastBarcodeResult||!_barcodeTargetSupl){showToast('Cap producte seleccionat');return;}
+  if(!_lastBarcodeResult){showToast('Cap producte seleccionat');return;}
+  const suplId=_barcodeTargetSupl||document.getElementById('suplAssignSelect')?.value;
+  if(!suplId){showToast('Selecciona un suplement');return;}
   const{ean,name,nutRows}=_lastBarcodeResult;
+  // Auto-activate supplement
+  const active=loadSupplements();
+  if(!active.includes(suplId)){active.push(suplId);saveSupplements(active);}
+  // Save dose — keep existing pills count if already configured
   const doses=loadSuplDoses();
-  if(!doses[_barcodeTargetSupl]) doses[_barcodeTargetSupl]={pills:1,dose:getSuplDefault(_barcodeTargetSupl,'dose'),unit:getSuplDefault(_barcodeTargetSupl,'unit'),productName:'',ean:''};
-  doses[_barcodeTargetSupl].productName=name||'';
-  doses[_barcodeTargetSupl].ean=ean;
-  if(nutRows.length>0){doses[_barcodeTargetSupl].dose=nutRows[0].value;doses[_barcodeTargetSupl].unit=nutRows[0].unit;}
+  const existing=doses[suplId]||{};
+  doses[suplId]={
+    pills:existing.pills||1,
+    dose:nutRows.length>0?nutRows[0].value:(existing.dose||getSuplDefault(suplId,'dose')),
+    unit:nutRows.length>0?nutRows[0].unit:(existing.unit||getSuplDefault(suplId,'unit')),
+    productName:name||'',
+    ean:ean||''
+  };
   saveSuplDoses(doses);
   closeBarcodeModal();
   renderPerfilSupplements();
-  showToast('✅ '+(name||'Producte')+' assignat');
+  const suplName=SUPPLEMENTS_DEF.find(s=>s.id===suplId)?.name||suplId;
+  showToast('✅ '+(name||'Producte')+' → '+suplName+' activat');
 }
 
 // ── AMAZON PRODUCT LOOKUP ──
@@ -1370,7 +1397,7 @@ function parseAmazonPaste(){
         <tbody>${rows.map(r=>'<tr><td>'+r.label+'</td><td style="color:var(--orange);font-weight:700">'+r.serving+'</td></tr>').join('')}</tbody>
       </table></div>
     </div>
-    <button class="btn btn-green" onclick="applyLastProductToSupl()" style="width:100%">✅ Assignar a ${tgt}</button>`;
+    ${renderAssignSection()}`;
 }
 
 async function lookupAmazon(url){
@@ -1378,8 +1405,6 @@ async function lookupAmazon(url){
   const asinM=url.match(/\/(?:dp|gp\/product)\/([A-Z0-9]{10})/i);
   const el=document.getElementById('barcodeResult');
   const asin=asinM?asinM[1]:'';
-  const tgt=document.getElementById('barcodeSuplTarget').textContent;
-
   el.innerHTML='<div style="text-align:center;padding:16px;color:var(--text2)">🛒 Intentant obtenir dades d\'Amazon...</div>';
 
   let productName='Producte Amazon'+(asin?' (ASIN: '+asin+')':'');
@@ -1387,7 +1412,6 @@ async function lookupAmazon(url){
 
   if(asin){
     try{
-      // Try Spanish Amazon first, then .com
       const domains=['amazon.es','amazon.com'];
       for(const domain of domains){
         const proxyUrl='https://corsproxy.io/?'+encodeURIComponent('https://www.'+domain+'/dp/'+asin+'?language=es_ES');
@@ -1398,7 +1422,6 @@ async function lookupAmazon(url){
           const doc=parser.parseFromString(html,'text/html');
           const titleEl=doc.querySelector('#productTitle,h1.a-size-large');
           if(titleEl) productName=titleEl.textContent.trim().slice(0,80);
-          // Collect all text from nutrient-rich zones
           const zones=['#important-information','#feature-bullets','#productDescription','#aplus','[data-feature-name="importantInformation"]'];
           const rawText=zones.map(sel=>doc.querySelector(sel)?.textContent||'').join('\n');
           const rows=parseAmazonText(rawText);
@@ -1417,7 +1440,7 @@ async function lookupAmazon(url){
                   <tbody>${rows.map(r=>'<tr><td>'+r.label+'</td><td style="color:var(--orange);font-weight:700">'+r.serving+'</td></tr>').join('')}</tbody>
                 </table></div>
               </div>
-              <button class="btn btn-green" onclick="applyLastProductToSupl()" style="width:100%">✅ Assignar a ${tgt}</button>`;
+              ${renderAssignSection()}`;
             break;
           }
         }
@@ -1716,8 +1739,11 @@ function renderPerfilSupplements(){
   if(!el) return;
 
   el.innerHTML=`
-    <div class="card-title">SUPLEMENTACIÓ</div>
-    <div style="font-size:11px;color:var(--text2);margin-bottom:12px">Toca per activar/desactivar. Els actius apareixen al teu resum nutricional.</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <div class="card-title" style="margin-bottom:0">SUPLEMENTACIÓ</div>
+      <button class="btn btn-ghost btn-sm" onclick="openBarcodeModal(null)" style="font-size:11px;padding:4px 10px;border-color:var(--green);color:var(--green)">📷 Escanejar producte</button>
+    </div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:12px">Toca per activar/desactivar, o escaneja un producte per activar-lo automàticament.</div>
     <div class="supl-grid">
       ${SUPPLEMENTS_DEF.map(s=>`
         <div class="supl-item ${active.includes(s.id)?'active':''}" onclick="toggleSupplement('${s.id}')">
