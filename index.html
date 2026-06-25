@@ -40,11 +40,11 @@ nav{
   height:calc(var(--nav-h) + var(--safe-b));padding-bottom:var(--safe-b);z-index:100
 }
 .nav-btn{
-  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
-  background:none;border:none;color:var(--text2);font-size:9px;font-weight:600;
-  text-transform:uppercase;letter-spacing:.4px;padding:6px 2px;transition:color .2s
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  background:none;border:none;color:var(--text2);font-size:7.5px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.3px;padding:4px 1px;transition:color .2s
 }
-.nav-btn .icon{font-size:20px;line-height:1}
+.nav-btn .icon{font-size:18px;line-height:1}
 .nav-btn.active{color:var(--green)}
 
 /* ── CARDS ── */
@@ -268,6 +268,38 @@ nav{
 @media(min-width:600px){
   .page{padding:20px 20px calc(var(--nav-h) + 20px);max-width:600px;margin:0 auto}
 }
+
+/* ── FOOD DB ── */
+.food-item{display:flex;align-items:center;gap:9px;padding:10px 0;border-bottom:1px solid var(--border)}
+.food-item:last-child{border-bottom:none}
+.food-health{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.food-health.sa{background:var(--green)}.food-health.moderat{background:var(--yellow)}.food-health.limitar{background:var(--red)}
+.food-info{flex:1;min-width:0}
+.food-name{font-size:13px;font-weight:700}
+.food-macros{font-size:10px;color:var(--text2);margin-top:2px}
+.food-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;flex-shrink:0}
+.food-badge.sa{background:#22c55e22;color:var(--green)}.food-badge.moderat{background:#eab30822;color:var(--yellow)}.food-badge.limitar{background:#ef444422;color:var(--red)}
+.food-actions{display:flex;gap:4px;flex-shrink:0}
+.food-pref-btn{background:none;border:1px solid var(--border);border-radius:7px;padding:3px 7px;font-size:12px;color:var(--text2);transition:all .2s}
+.food-pref-btn.active-pref{background:#22c55e22;border-color:var(--green)}.food-pref-btn.active-excl{background:#ef444422;border-color:var(--red)}
+/* ── SUPPLEMENTS ── */
+.supl-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.supl-item{background:var(--bg3);border-radius:12px;padding:10px;border:1.5px solid var(--border);cursor:pointer;transition:all .2s;display:flex;flex-direction:column;gap:3px}
+.supl-item.active{border-color:var(--green);background:#22c55e11}
+.supl-icon{font-size:22px}.supl-name{font-size:12px;font-weight:700;line-height:1.2}
+.supl-desc{font-size:10px;color:var(--text2)}.supl-dose{font-size:10px;color:var(--blue);font-weight:600;margin-top:2px}
+.supl-status-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
+.supl-status-row:last-child{border-bottom:none}
+.supl-dot{width:9px;height:9px;border-radius:50%;background:var(--green);flex-shrink:0}
+/* ── SHOPPING LIST ── */
+.shop-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.shop-item:last-child{border-bottom:none}
+.shop-check{width:19px;height:19px;accent-color:var(--green);flex-shrink:0;margin-top:2px;cursor:pointer}
+.shop-info{flex:1}
+.shop-name{font-size:13px;font-weight:700;transition:all .2s}
+.shop-name.checked{text-decoration:line-through;opacity:.45}
+.shop-qty{font-size:11px;color:var(--blue);font-weight:700;margin-top:2px}
+.shop-note{font-size:10px;color:var(--text2);margin-top:1px}
 </style>
 </head>
 <body>
@@ -500,15 +532,59 @@ nav{
     <div class="form-group"><label>Pes objectiu (kg)</label><input type="number" step=".1" class="form-control" id="pPesObj" placeholder="88" oninput="updatePerfilCalc()"></div>
     <button class="btn btn-green" onclick="savePerfilPage()">✅ Desar perfil</button>
   </div>
+  <!-- Supplementation -->
+  <div class="card" id="perfilSuplCard"></div>
+</div>
+
+<!-- ═══════════ ALIMENTS ═══════════ -->
+<div class="page" id="page-aliments">
+  <div class="sec-h">Aliments</div>
+  <div class="sec-sub">Base de dades nutricional</div>
+  <div class="filter-tabs" id="alimentsFilterTabs">
+    <button class="ftab active" onclick="filterAliments('tots',this)">Tot</button>
+    <button class="ftab" onclick="filterAliments('preferits',this)">⭐ Preferits</button>
+    <button class="ftab" onclick="filterAliments('exclosos',this)">🚫 Exclosos</button>
+    <button class="ftab" onclick="filterAliments('proteina',this)">🥩 Prot.</button>
+    <button class="ftab" onclick="filterAliments('llegum',this)">🫘 Llegums</button>
+    <button class="ftab" onclick="filterAliments('cereal',this)">🌾 Cereals</button>
+    <button class="ftab" onclick="filterAliments('verdura',this)">🥦 Verd.</button>
+    <button class="ftab" onclick="filterAliments('fruita',this)">🍎 Fruites</button>
+    <button class="ftab" onclick="filterAliments('greix',this)">🥑 Greixos</button>
+    <button class="ftab" onclick="filterAliments('lacti',this)">🥛 Lactis</button>
+  </div>
+  <div class="form-group" style="margin-bottom:10px">
+    <input type="text" class="form-control" id="alimentsSearch" placeholder="Buscar aliment..." oninput="renderAliments()">
+  </div>
+  <div style="display:flex;gap:12px;margin-bottom:10px;font-size:11px;color:var(--text2);align-items:center">
+    <span style="display:flex;align-items:center;gap:5px"><span class="food-health sa"></span> Sa</span>
+    <span style="display:flex;align-items:center;gap:5px"><span class="food-health moderat"></span> Moderat</span>
+    <span style="display:flex;align-items:center;gap:5px"><span class="food-health limitar"></span> Limitar</span>
+    <span style="margin-left:auto;font-size:10px">⭐ preferit · 🚫 excloure</span>
+  </div>
+  <div class="card" id="alimentsList"></div>
+</div>
+
+<!-- ═══════════ COMPRA ═══════════ -->
+<div class="page" id="page-compra">
+  <div class="sec-h">Llista de la Compra</div>
+  <div class="sec-sub">Ingredients per a la setmana</div>
+  <div style="display:flex;gap:8px;margin-bottom:12px">
+    <button class="btn btn-ghost btn-sm" onclick="resetShoppingChecks()" style="flex:1">🔄 Desmarcar tot</button>
+    <button class="btn btn-green btn-sm" onclick="renderCompra()" style="flex:1">🔃 Actualitzar llista</button>
+  </div>
+  <div id="shopProgress" style="margin-bottom:12px"></div>
+  <div id="shopList"></div>
 </div>
 
 <!-- ═══════════ NAV ═══════════ -->
 <nav>
   <button class="nav-btn active" onclick="goPage('dashboard',this)"><span class="icon">🏠</span>Inici</button>
   <button class="nav-btn" onclick="goPage('diet',this)"><span class="icon">🥗</span>Dieta</button>
-  <button class="nav-btn" onclick="goPage('calendar',this)"><span class="icon">📅</span>Calendari</button>
+  <button class="nav-btn" onclick="goPage('calendar',this)"><span class="icon">📅</span>Agenda</button>
   <button class="nav-btn" onclick="goPage('training',this)"><span class="icon">💪</span>Entrena</button>
   <button class="nav-btn" onclick="goPage('stats',this)"><span class="icon">📊</span>Stats</button>
+  <button class="nav-btn" onclick="goPage('aliments',this)"><span class="icon">🍎</span>Aliments</button>
+  <button class="nav-btn" onclick="goPage('compra',this)"><span class="icon">🛒</span>Compra</button>
   <button class="nav-btn" onclick="goPage('perfil',this)"><span class="icon">👤</span>Perfil</button>
 </nav>
 </div><!-- #app -->
@@ -758,6 +834,166 @@ const MEAL_PLAN = {
 };
 
 // ═══════════════════════════════════════════
+// FOOD DATABASE
+// ═══════════════════════════════════════════
+// Dades nutricionals per 100g. Fonts: USDA FoodData Central, BDA Food Tables, Nutri-Score
+const FOOD_DB = [
+  // PROTEÏNES
+  {id:'chicken_breast',name:'Pit de pollastre',cat:'proteina',per100:{kcal:165,prot:31,ch:0,greix:3.6},health:'sa'},
+  {id:'turkey',name:"Gall d'indi (pit)",cat:'proteina',per100:{kcal:135,prot:29,ch:0,greix:1.5},health:'sa'},
+  {id:'salmon',name:'Salmó fresc',cat:'proteina',per100:{kcal:208,prot:20,ch:0,greix:13},health:'sa'},
+  {id:'tuna_fresh',name:'Tonyina fresca',cat:'proteina',per100:{kcal:144,prot:30,ch:0,greix:2.5},health:'sa'},
+  {id:'tuna_can',name:'Tonyina natural (llauna)',cat:'proteina',per100:{kcal:116,prot:25.5,ch:0,greix:0.8},health:'sa'},
+  {id:'cod',name:'Bacallà',cat:'proteina',per100:{kcal:82,prot:18,ch:0,greix:0.7},health:'sa'},
+  {id:'hake',name:'Lluç',cat:'proteina',per100:{kcal:86,prot:18,ch:0,greix:1.5},health:'sa'},
+  {id:'dorade',name:'Dorada / Rap',cat:'proteina',per100:{kcal:100,prot:20,ch:0,greix:2.5},health:'sa'},
+  {id:'shrimp',name:'Gambes / Cloïsses',cat:'proteina',per100:{kcal:85,prot:18,ch:0.9,greix:0.9},health:'sa'},
+  {id:'egg',name:'Ou sencer',cat:'proteina',per100:{kcal:155,prot:13,ch:1.1,greix:11},health:'moderat'},
+  {id:'egg_white',name:"Claror d'ou",cat:'proteina',per100:{kcal:52,prot:11,ch:0.7,greix:0.2},health:'sa'},
+  {id:'beef_lean',name:'Vedella magra',cat:'proteina',per100:{kcal:161,prot:26,ch:0,greix:6},health:'moderat'},
+  {id:'pork_lean',name:'Llom de porc magre',cat:'proteina',per100:{kcal:143,prot:26,ch:0,greix:4},health:'moderat'},
+  // LLEGUMS
+  {id:'lentils',name:'Llenties (cuites)',cat:'llegum',per100:{kcal:116,prot:9,ch:20,greix:0.4},health:'sa'},
+  {id:'chickpeas',name:'Cigrons (cuits)',cat:'llegum',per100:{kcal:164,prot:8.9,ch:27,greix:2.6},health:'sa'},
+  {id:'black_beans',name:'Mongetes negres (cuites)',cat:'llegum',per100:{kcal:132,prot:8.9,ch:23.7,greix:0.5},health:'sa'},
+  {id:'white_beans',name:'Mongetes blanques (cuites)',cat:'llegum',per100:{kcal:127,prot:8.7,ch:22.8,greix:0.5},health:'sa'},
+  {id:'peas',name:'Pèsols',cat:'llegum',per100:{kcal:81,prot:5.4,ch:14.5,greix:0.4},health:'sa'},
+  {id:'edamame',name:'Edamame',cat:'llegum',per100:{kcal:121,prot:11.9,ch:8.9,greix:5.2},health:'sa'},
+  // LACTIS
+  {id:'greek_yogurt_0',name:'Iogurt grec 0%',cat:'lacti',per100:{kcal:57,prot:10,ch:3.6,greix:0.4},health:'sa'},
+  {id:'skyr',name:'Iogurt Skyr',cat:'lacti',per100:{kcal:63,prot:11,ch:4,greix:0.2},health:'sa'},
+  {id:'greek_yogurt',name:'Iogurt grec sencer',cat:'lacti',per100:{kcal:97,prot:9,ch:3.6,greix:5},health:'moderat'},
+  {id:'cottage',name:'Formatge cottage / Mató',cat:'lacti',per100:{kcal:98,prot:11.1,ch:3.4,greix:4.3},health:'moderat'},
+  {id:'queso_fresco_0',name:'Formatge fresc desnatat',cat:'lacti',per100:{kcal:72,prot:12,ch:2.5,greix:1.4},health:'sa'},
+  {id:'milk_skim',name:'Llet desnatada',cat:'lacti',per100:{kcal:34,prot:3.4,ch:5,greix:0.1},health:'sa'},
+  {id:'milk_full',name:'Llet sencera',cat:'lacti',per100:{kcal:61,prot:3.2,ch:4.8,greix:3.3},health:'moderat'},
+  {id:'casein',name:'Càseum (proteïna lenta)',cat:'lacti',per100:{kcal:350,prot:80,ch:2,greix:1.5},health:'sa'},
+  // CEREALS
+  {id:'oats',name:'Civada / Avena',cat:'cereal',per100:{kcal:389,prot:17,ch:66,greix:7},health:'sa'},
+  {id:'brown_rice',name:'Arròs integral',cat:'cereal',per100:{kcal:370,prot:7.5,ch:77,greix:2.7},health:'sa'},
+  {id:'white_rice',name:'Arròs blanc',cat:'cereal',per100:{kcal:365,prot:6.7,ch:79,greix:0.7},health:'moderat'},
+  {id:'pasta_int',name:'Pasta integral',cat:'cereal',per100:{kcal:352,prot:13,ch:67,greix:2.5},health:'sa'},
+  {id:'pasta_norm',name:'Pasta normal',cat:'cereal',per100:{kcal:358,prot:12.5,ch:71,greix:1.8},health:'moderat'},
+  {id:'quinoa',name:'Quinoa',cat:'cereal',per100:{kcal:368,prot:14,ch:64,greix:6},health:'sa'},
+  {id:'bread_int',name:'Pa integral',cat:'cereal',per100:{kcal:247,prot:10,ch:41,greix:3.5},health:'sa'},
+  {id:'bread_white',name:'Pa blanc',cat:'cereal',per100:{kcal:265,prot:8,ch:51,greix:3.2},health:'limitar'},
+  {id:'rice_cakes',name:"Tortitas d'arròs",cat:'cereal',per100:{kcal:387,prot:7,ch:82,greix:2.8},health:'moderat'},
+  {id:'granola',name:'Granola proteica',cat:'cereal',per100:{kcal:420,prot:12,ch:55,greix:16},health:'moderat'},
+  // VERDURES
+  {id:'broccoli',name:'Bròcoli',cat:'verdura',per100:{kcal:34,prot:2.8,ch:7,greix:0.4},health:'sa'},
+  {id:'spinach',name:'Espinacs',cat:'verdura',per100:{kcal:23,prot:2.9,ch:3.6,greix:0.4},health:'sa'},
+  {id:'tomato',name:'Tomàquet',cat:'verdura',per100:{kcal:18,prot:0.9,ch:3.9,greix:0.2},health:'sa'},
+  {id:'zucchini',name:'Carabassó',cat:'verdura',per100:{kcal:17,prot:1.2,ch:3.1,greix:0.3},health:'sa'},
+  {id:'pepper',name:'Pebrot (vermell/verd)',cat:'verdura',per100:{kcal:31,prot:1,ch:6,greix:0.3},health:'sa'},
+  {id:'lettuce',name:'Enciam / Amanida verda',cat:'verdura',per100:{kcal:15,prot:1.4,ch:2.9,greix:0.2},health:'sa'},
+  {id:'pumpkin',name:'Carbassa',cat:'verdura',per100:{kcal:26,prot:1,ch:6.5,greix:0.1},health:'sa'},
+  {id:'mushrooms',name:'Xampinyons',cat:'verdura',per100:{kcal:22,prot:3.1,ch:3.3,greix:0.3},health:'sa'},
+  {id:'asparagus',name:'Espàrrecs',cat:'verdura',per100:{kcal:20,prot:2.2,ch:3.9,greix:0.1},health:'sa'},
+  {id:'eggplant',name:'Albergínia',cat:'verdura',per100:{kcal:25,prot:1,ch:5.9,greix:0.2},health:'sa'},
+  {id:'onion',name:'Ceba',cat:'verdura',per100:{kcal:40,prot:1.1,ch:9.3,greix:0.1},health:'sa'},
+  {id:'carrot',name:'Pastanaga',cat:'verdura',per100:{kcal:41,prot:0.9,ch:9.6,greix:0.2},health:'sa'},
+  {id:'green_beans',name:'Mongeta tendra',cat:'verdura',per100:{kcal:31,prot:1.8,ch:7,greix:0.1},health:'sa'},
+  {id:'cabbage',name:'Bròcol·flor / Col',cat:'verdura',per100:{kcal:25,prot:1.9,ch:5,greix:0.3},health:'sa'},
+  // FRUITES
+  {id:'banana',name:'Plàtan',cat:'fruita',per100:{kcal:89,prot:1.1,ch:23,greix:0.3},health:'sa'},
+  {id:'apple',name:'Poma',cat:'fruita',per100:{kcal:52,prot:0.3,ch:14,greix:0.2},health:'sa'},
+  {id:'orange',name:'Taronja / Suc natural',cat:'fruita',per100:{kcal:47,prot:0.9,ch:12,greix:0.1},health:'sa'},
+  {id:'kiwi',name:'Kiwi',cat:'fruita',per100:{kcal:61,prot:1.1,ch:15,greix:0.5},health:'sa'},
+  {id:'strawberry',name:'Maduixa',cat:'fruita',per100:{kcal:32,prot:0.7,ch:7.7,greix:0.3},health:'sa'},
+  {id:'blueberry',name:'Nabiu',cat:'fruita',per100:{kcal:57,prot:0.7,ch:14,greix:0.3},health:'sa'},
+  {id:'raspberry',name:'Gerd',cat:'fruita',per100:{kcal:52,prot:1.2,ch:12,greix:0.7},health:'sa'},
+  {id:'melon',name:'Meló',cat:'fruita',per100:{kcal:34,prot:0.8,ch:8,greix:0.2},health:'sa'},
+  {id:'avocado',name:'Alvocat',cat:'fruita',per100:{kcal:160,prot:2,ch:9,greix:15},health:'sa'},
+  {id:'pineapple',name:'Pinya',cat:'fruita',per100:{kcal:50,prot:0.5,ch:13,greix:0.1},health:'sa'},
+  // GREIXOS / FRUITS SECS
+  {id:'olive_oil',name:"Oli d'oliva verge extra (AOVE)",cat:'greix',per100:{kcal:884,prot:0,ch:0,greix:100},health:'sa'},
+  {id:'walnuts',name:'Nous',cat:'greix',per100:{kcal:654,prot:15,ch:14,greix:65},health:'sa'},
+  {id:'almonds',name:'Ametlles',cat:'greix',per100:{kcal:579,prot:21,ch:22,greix:50},health:'sa'},
+  {id:'peanut_butter',name:'Mantequilla de cacauet (natural)',cat:'greix',per100:{kcal:588,prot:25,ch:20,greix:50},health:'moderat'},
+  {id:'dark_choc',name:'Xocolata negra 85%+',cat:'greix',per100:{kcal:598,prot:8,ch:45,greix:43},health:'moderat'},
+  {id:'chia',name:'Llavors de xia',cat:'greix',per100:{kcal:486,prot:17,ch:42,greix:31},health:'sa'},
+  {id:'flaxseed',name:'Llavors de lli',cat:'greix',per100:{kcal:534,prot:18,ch:29,greix:42},health:'sa'},
+  // TUBERCLES
+  {id:'potato',name:'Patata (bullida)',cat:'tubercle',per100:{kcal:77,prot:2,ch:17,greix:0.1},health:'moderat'},
+  {id:'sweet_potato',name:'Moniato / Boniato',cat:'tubercle',per100:{kcal:86,prot:1.6,ch:20,greix:0.1},health:'sa'},
+  // SUPLEMENTACIÓ
+  {id:'whey_supl',name:'Batut proteïna Whey',cat:'suplement',per100:{kcal:350,prot:75,ch:5,greix:3},health:'sa'},
+  {id:'casein_supl',name:'Càseum (presa nocturna)',cat:'suplement',per100:{kcal:350,prot:80,ch:2,greix:1.5},health:'sa'},
+  // ALIMENTS A LIMITAR
+  {id:'honey',name:'Mel',cat:'altres',per100:{kcal:304,prot:0.3,ch:82,greix:0},health:'limitar'},
+  {id:'sugar',name:'Sucre blanc',cat:'altres',per100:{kcal:387,prot:0,ch:100,greix:0},health:'limitar'},
+  {id:'choc_milk',name:'Xocolata amb llet',cat:'altres',per100:{kcal:535,prot:8,ch:59,greix:30},health:'limitar'},
+  {id:'alcohol',name:'Alcohol / Cervesa',cat:'altres',per100:{kcal:250,prot:0,ch:10,greix:0},health:'limitar'},
+];
+
+// ═══════════════════════════════════════════
+// SUPPLEMENTS DATABASE
+// ═══════════════════════════════════════════
+const SUPPLEMENTS_DEF = [
+  {id:'vit_d',name:'Vitamina D3',icon:'☀️',desc:'Ossos, immunitat i ànims',benefits:['Absorció calci','Sistema immunitari','Salut muscular','Benestar'],dose:'1000–4000 UI/dia',timing:'Matí amb menjar gras'},
+  {id:'vit_c',name:'Vitamina C',icon:'🍊',desc:'Antioxidant i col·lagen',benefits:['Immunitat','Antioxidant','Síntesi col·lagen','Recuperació'],dose:'500–1000 mg/dia',timing:'Qualsevol moment'},
+  {id:'vit_b12',name:'Vitamina B12',icon:'🧠',desc:'Energia i sistema nerviós',benefits:['Energia','Glòbuls vermells','Sistema nerviós','Concentració'],dose:'500–1000 µg/dia',timing:'Matí'},
+  {id:'b_complex',name:'Complex B',icon:'💊',desc:'Metabolisme energètic',benefits:['Metabolisme','Energia','Sistema nerviós','Pell i cabell'],dose:'1 càpsula/dia',timing:'Matí amb menjar'},
+  {id:'magnesium',name:'Magnesi',icon:'🪨',desc:'Múscul, son i nervis',benefits:['Relaxació muscular','Qualitat del son','Nervis','Calambres'],dose:'300–400 mg/dia',timing:'Nit, sopar'},
+  {id:'omega3',name:'Omega-3 EPA/DHA',icon:'🐟',desc:'Antiinflamatori i cor',benefits:['Inflamació','Salut cardiovascular','Cervell','Recuperació'],dose:'1–3 g EPA+DHA/dia',timing:'Amb menjar'},
+  {id:'collagen',name:'Col·lagen',icon:'🦴',desc:'Articulacions i pell',benefits:['Articulacions','Tendons i lligaments','Pell','Ossos'],dose:'10–15 g/dia',timing:'Dejú o post-entrenament'},
+  {id:'zinc',name:'Zinc',icon:'🔬',desc:'Immunitat i testosterona',benefits:['Immunitat','Testosterona','Cicatrització','Pell'],dose:'15–30 mg/dia',timing:'Nit o menjar'},
+  {id:'iron',name:'Ferro',icon:'🩸',desc:'Hemoglobina i energia',benefits:['Transport oxigen','Energia','Rendiment','Recuperació'],dose:'14–18 mg/dia',timing:'Dejú amb vitamina C'},
+  {id:'calcium',name:'Calci',icon:'🦷',desc:'Ossos i contracció muscular',benefits:['Densitat òssia','Contracció muscular','Nervis','Cor'],dose:'1000–1200 mg/dia',timing:'Amb menjar'},
+  {id:'creatine',name:'Creatina',icon:'⚡',desc:'Potència i massa muscular',benefits:['Força i potència','Massa muscular','Recuperació','Sprint'],dose:'3–5 g/dia',timing:'Post-entrenament'},
+  {id:'whey',name:'Proteïna Whey',icon:'🥛',desc:'Recuperació muscular',benefits:['Síntesi proteica','Recuperació ràpida','Massa muscular','Sacietat'],dose:'20–40 g/presa',timing:'Post-entrenament'},
+  {id:'bcaa',name:'BCAA',icon:'💪',desc:'Recuperació anti-catabolisme',benefits:['Preservació muscular','Fatiga','Recuperació','Rendiment'],dose:'5–10 g/dia',timing:'Peri-entrenament'},
+  {id:'melatonin',name:'Melatonina',icon:'🌙',desc:'Son i recuperació nocturna',benefits:['Qualitat son','Recuperació','Antioxidant','Immunitat'],dose:'0.5–3 mg/dia',timing:'30 min abans dormir'},
+];
+
+// ═══════════════════════════════════════════
+// SHOPPING TEMPLATE (ingredients setmanals)
+// ═══════════════════════════════════════════
+const SHOPPING_TEMPLATE = [
+  {id:'sp1',cat:'Proteïnes',name:'Pit de pollastre',qty:'800 g',notes:'~200g × 4 dinars'},
+  {id:'sp2',cat:'Proteïnes',name:'Salmó fresc',qty:'200 g',notes:'1 ració sopar'},
+  {id:'sp3',cat:'Proteïnes',name:'Tonyina natural (llaunes)',qty:'3 llaunes',notes:'Dinar dia 2'},
+  {id:'sp4',cat:'Proteïnes',name:"Pit de gall d'indi",qty:'400 g',notes:'Sopars 2 dies'},
+  {id:'sp5',cat:'Proteïnes',name:'Lluç o peix blanc',qty:'400 g',notes:'2 racions'},
+  {id:'sp6',cat:'Proteïnes',name:'Bacallà dessalat',qty:'200 g',notes:'Sopar dia 4'},
+  {id:'sp7',cat:'Proteïnes',name:'Ous',qty:'18 unitats',notes:'Esmorzars + sopars'},
+  {id:'sp8',cat:'Proteïnes',name:'Vedella magra',qty:'200 g',notes:'Sopar dia 3'},
+  {id:'sp9',cat:'Lactis',name:'Iogurt grec 0%',qty:'4 pots (200g)',notes:'Snacks matí'},
+  {id:'sp10',cat:'Lactis',name:'Iogurt Skyr',qty:'2 pots (200g)',notes:'Snacks'},
+  {id:'sp11',cat:'Lactis',name:'Llet desnatada',qty:'2 litres',notes:'Esmorzars + batuts'},
+  {id:'sp12',cat:'Lactis',name:'Formatge cottage',qty:'1 pot (250g)',notes:'Snack dia 5'},
+  {id:'sp13',cat:'Cereals',name:'Civada / Avena',qty:'500 g',notes:'Esmorzars (80g/dia)'},
+  {id:'sp14',cat:'Cereals',name:'Arròs integral',qty:'400 g',notes:'Dinars 3-4 dies'},
+  {id:'sp15',cat:'Cereals',name:'Pasta integral',qty:'300 g',notes:'Dinar dia 2'},
+  {id:'sp16',cat:'Cereals',name:'Quinoa',qty:'200 g',notes:'Dinar dia 4'},
+  {id:'sp17',cat:'Cereals',name:'Pa integral',qty:'1 barra (500g)',notes:'Esmorzars + sopars'},
+  {id:'sp18',cat:'Cereals',name:"Tortitas d'arròs",qty:'1 paquet',notes:'Pre-entrenament'},
+  {id:'sp19',cat:'Verdures',name:'Bròcoli',qty:'500 g',notes:'Dinars i sopars'},
+  {id:'sp20',cat:'Verdures',name:'Espinacs frescs',qty:'300 g',notes:'Sopars 2 dies'},
+  {id:'sp21',cat:'Verdures',name:'Tomàquets',qty:'6 unitats',notes:'Esmorzars + amanides'},
+  {id:'sp22',cat:'Verdures',name:'Enciam / Amanida',qty:'2 bosses',notes:'Dinars + sopars'},
+  {id:'sp23',cat:'Verdures',name:'Pebrot (vermell/verd)',qty:'4 unitats',notes:'Dinars 2 dies'},
+  {id:'sp24',cat:'Verdures',name:'Carabassó',qty:'3 unitats',notes:'Sopars'},
+  {id:'sp25',cat:'Verdures',name:'Espàrrecs',qty:'300 g',notes:'Sopar dia 5'},
+  {id:'sp26',cat:'Verdures',name:'Xampinyons',qty:'200 g',notes:'Sopar dia 3'},
+  {id:'sp27',cat:'Verdures',name:'Mongeta tendra',qty:'300 g',notes:'Sopar dia 4'},
+  {id:'sp28',cat:'Fruites',name:'Plàtans',qty:'7 unitats',notes:'Pre-entrenament (1/dia)'},
+  {id:'sp29',cat:'Fruites',name:'Pomes',qty:'4 unitats',notes:'Snacks tarda'},
+  {id:'sp30',cat:'Fruites',name:'Maduixes',qty:'300 g',notes:'Esmorzar dia 1'},
+  {id:'sp31',cat:'Fruites',name:'Nabius',qty:'200 g',notes:'Post-entreno i snacks'},
+  {id:'sp32',cat:'Fruites',name:'Kiwis',qty:'4 unitats',notes:'Esmorzar dia 3'},
+  {id:'sp33',cat:'Greixos',name:"Oli d'oliva verge extra",qty:'500 ml',notes:'Cuinar i amanir tota la setmana'},
+  {id:'sp34',cat:'Greixos',name:'Nous',qty:'100 g',notes:'Snacks matí × 5 dies'},
+  {id:'sp35',cat:'Greixos',name:'Ametlles',qty:'100 g',notes:'Snacks'},
+  {id:'sp36',cat:'Greixos',name:'Mantequilla de cacauet',qty:'1 pot',notes:'Pre-entrenament × 3 dies'},
+  {id:'sp37',cat:'Tubercles',name:'Patates',qty:'600 g',notes:'Sopars (200g × 3 dies)'},
+  {id:'sp38',cat:'Tubercles',name:'Moniato / Boniato',qty:'300 g',notes:'Sopar dia 2'},
+  {id:'sp39',cat:'Suplementació',name:'Batut proteïna (Whey/Càseum)',qty:'7 preses',notes:'Post-entrenament diari'},
+  {id:'sp40',cat:'Altres',name:'Llenties o cigrons (llauna)',qty:'2 llaunes',notes:'Dinar llegums'},
+  {id:'sp41',cat:'Altres',name:'Xocolata negra 85%',qty:'50 g',notes:'Snack setmanal moderat'},
+];
+
+// ═══════════════════════════════════════════
 // UTILS
 // ═══════════════════════════════════════════
 function pad(n){return String(n).padStart(2,'0')}
@@ -804,6 +1040,83 @@ function loadAchievements(){
   return raw?JSON.parse(raw):[];
 }
 function saveAchievements(d){localStorage.setItem(KEYS.ach,JSON.stringify(d))}
+
+// ── FOOD PREFERENCES ──
+function loadFoodPrefs(){
+  const raw=localStorage.getItem('dr_food_prefs');
+  return raw?JSON.parse(raw):{preferred:[],excluded:[]};
+}
+function saveFoodPrefs(p){localStorage.setItem('dr_food_prefs',JSON.stringify(p));}
+
+function toggleFoodPref(id,type){
+  const prefs=loadFoodPrefs();
+  const other=type==='preferred'?'excluded':'preferred';
+  prefs[other]=prefs[other].filter(x=>x!==id);
+  if(prefs[type].includes(id)){
+    prefs[type]=prefs[type].filter(x=>x!==id);
+    showToast('Eliminat de '+(type==='preferred'?'preferits':'exclosos'));
+  } else {
+    prefs[type].push(id);
+    showToast(type==='preferred'?'⭐ Preferit!':'🚫 Exclòs de la dieta');
+  }
+  saveFoodPrefs(prefs);
+  renderAliments();
+}
+
+// ── SUPPLEMENTS ──
+function loadSupplements(){
+  const raw=localStorage.getItem('dr_supplements');
+  return raw?JSON.parse(raw):[];
+}
+function saveSupplements(s){localStorage.setItem('dr_supplements',JSON.stringify(s));}
+
+function toggleSupplement(id){
+  const active=loadSupplements();
+  const idx=active.indexOf(id);
+  if(idx>=0) active.splice(idx,1); else active.push(id);
+  saveSupplements(active);
+  renderPerfilSupplements();
+  showToast(idx>=0?'Suplement desactivat':'✅ Suplement activat');
+}
+
+// ── SHOPPING CHECKS ──
+function loadShoppingChecks(){
+  const raw=localStorage.getItem('dr_shopping_checks');
+  return raw?JSON.parse(raw):[];
+}
+function saveShoppingChecks(c){localStorage.setItem('dr_shopping_checks',JSON.stringify(c));}
+
+function toggleShoppingCheck(id){
+  const checks=loadShoppingChecks();
+  const idx=checks.indexOf(id);
+  if(idx>=0) checks.splice(idx,1); else checks.push(id);
+  saveShoppingChecks(checks);
+  const nameEl=document.querySelector(`[data-shopid="${id}"] .shop-name`);
+  if(nameEl) nameEl.classList.toggle('checked',idx<0);
+  updateShopProgress();
+}
+
+function resetShoppingChecks(){
+  saveShoppingChecks([]);
+  renderCompra();
+  showToast('🔄 Llista reiniciada');
+}
+
+function updateShopProgress(){
+  const checks=loadShoppingChecks();
+  const total=SHOPPING_TEMPLATE.length;
+  const done=checks.length;
+  const pct=Math.round(done/total*100);
+  const el=document.getElementById('shopProgress');
+  if(!el) return;
+  el.innerHTML=`
+    <div style="display:flex;justify-content:space-between;margin-bottom:5px;font-size:12px;font-weight:600">
+      <span>Completat</span><span style="color:var(--green)">${done}/${total} articles</span>
+    </div>
+    <div class="bar-wrap"><div class="bar-fill" style="width:${pct}%;background:var(--green)"></div></div>
+    <div style="font-size:10px;color:var(--text2);margin-top:4px">${pct}% de la llista feta${pct===100?' 🎉 Llista completa!':''}</div>
+  `;
+}
 
 function getAllRaces(){
   return [...BUILT_IN_RACES,...loadCustomRaces()];
@@ -918,6 +1231,140 @@ const CHART_DEFAULTS={
 };
 
 // ═══════════════════════════════════════════
+// ALIMENTS
+// ═══════════════════════════════════════════
+let _alimentsFilter='tots';
+
+function filterAliments(filter,btn){
+  _alimentsFilter=filter;
+  document.querySelectorAll('#alimentsFilterTabs .ftab').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  renderAliments();
+}
+
+function renderAliments(){
+  const search=(document.getElementById('alimentsSearch')?.value||'').toLowerCase().trim();
+  const prefs=loadFoodPrefs();
+  let foods=FOOD_DB;
+  if(_alimentsFilter==='preferits') foods=foods.filter(f=>prefs.preferred.includes(f.id));
+  else if(_alimentsFilter==='exclosos') foods=foods.filter(f=>prefs.excluded.includes(f.id));
+  else if(!['tots'].includes(_alimentsFilter)) foods=foods.filter(f=>f.cat===_alimentsFilter);
+  if(search) foods=foods.filter(f=>f.name.toLowerCase().includes(search));
+
+  const catOrder=['proteina','llegum','lacti','cereal','verdura','fruita','greix','tubercle','suplement','altres'];
+  const catNames={proteina:'Proteïnes',llegum:'Llegums',lacti:'Lactis',cereal:'Cereals / Hidrats',verdura:'Verdures',fruita:'Fruites',greix:'Greixos i Fruits Secs',tubercle:'Tubercles',suplement:'Suplementació',altres:'Altres / Limitar'};
+  const catIcons={proteina:'🥩',llegum:'🫘',lacti:'🥛',cereal:'🌾',verdura:'🥦',fruita:'🍎',greix:'🥑',tubercle:'🍠',suplement:'💊',altres:'⚠️'};
+  const healthLabel={sa:'Sa',moderat:'Moderat',limitar:'Limitar'};
+
+  const el=document.getElementById('alimentsList');
+  if(!el) return;
+  if(foods.length===0){
+    el.innerHTML=`<div style="text-align:center;padding:30px;color:var(--text2);font-size:14px">${_alimentsFilter==='preferits'?'Cap preferit. Marca ⭐ als aliments que t\'agraden.':_alimentsFilter==='exclosos'?'Cap aliment exclòs.':'Cap resultat.'}</div>`;
+    return;
+  }
+
+  const groups={};
+  foods.forEach(f=>{if(!groups[f.cat])groups[f.cat]=[];groups[f.cat].push(f);});
+  const showHeaders=(_alimentsFilter==='tots'||_alimentsFilter==='preferits'||_alimentsFilter==='exclosos');
+  const orderedCats=showHeaders?catOrder.filter(c=>groups[c]):[_alimentsFilter];
+
+  let html='';
+  orderedCats.forEach(cat=>{
+    const list=groups[cat]; if(!list) return;
+    if(showHeaders) html+=`<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--text2);padding:10px 0 4px;border-bottom:2px solid var(--border);margin-bottom:2px">${catIcons[cat]||''} ${catNames[cat]||cat}</div>`;
+    list.forEach(f=>{
+      const isPref=prefs.preferred.includes(f.id);
+      const isExcl=prefs.excluded.includes(f.id);
+      html+=`<div class="food-item">
+        <span class="food-health ${f.health}"></span>
+        <div class="food-info">
+          <div class="food-name">${f.name}${isExcl?' <span style="color:var(--red);font-size:10px">(exclòs)</span>':isPref?' <span style="color:var(--yellow);font-size:10px">(preferit)</span>':''}</div>
+          <div class="food-macros">per 100g · ${f.per100.kcal} kcal · P:${f.per100.prot}g · CH:${f.per100.ch}g · G:${f.per100.greix}g</div>
+        </div>
+        <span class="food-badge ${f.health}">${healthLabel[f.health]}</span>
+        <div class="food-actions">
+          <button class="food-pref-btn ${isPref?'active-pref':''}" onclick="toggleFoodPref('${f.id}','preferred')">⭐</button>
+          <button class="food-pref-btn ${isExcl?'active-excl':''}" onclick="toggleFoodPref('${f.id}','excluded')">🚫</button>
+        </div>
+      </div>`;
+    });
+  });
+  el.innerHTML=html;
+}
+
+// ═══════════════════════════════════════════
+// COMPRA
+// ═══════════════════════════════════════════
+function renderCompra(){
+  const checks=loadShoppingChecks();
+  const catOrder=['Proteïnes','Lactis','Cereals','Verdures','Fruites','Greixos','Tubercles','Suplementació','Altres'];
+  const groups={};
+  SHOPPING_TEMPLATE.forEach(item=>{if(!groups[item.cat])groups[item.cat]=[];groups[item.cat].push(item);});
+
+  updateShopProgress();
+
+  let html='';
+  catOrder.filter(c=>groups[c]).forEach(cat=>{
+    const list=groups[cat];
+    const catDone=list.filter(i=>checks.includes(i.id)).length;
+    html+=`<div class="card" style="margin-bottom:10px">
+      <div class="card-title">${cat} <span style="font-weight:400;color:var(--text2)">${catDone}/${list.length}</span></div>`;
+    list.forEach(item=>{
+      const checked=checks.includes(item.id);
+      html+=`<div class="shop-item" data-shopid="${item.id}">
+        <input type="checkbox" class="shop-check" ${checked?'checked':''} onchange="toggleShoppingCheck('${item.id}')">
+        <div class="shop-info">
+          <div class="shop-name${checked?' checked':''}">${item.name}</div>
+          <div class="shop-qty">${item.qty}</div>
+          <div class="shop-note">${item.notes}</div>
+        </div>
+      </div>`;
+    });
+    html+='</div>';
+  });
+  document.getElementById('shopList').innerHTML=html;
+}
+
+// ═══════════════════════════════════════════
+// SUPPLEMENTS RENDER (dins Perfil)
+// ═══════════════════════════════════════════
+function renderPerfilSupplements(){
+  const active=loadSupplements();
+  const el=document.getElementById('perfilSuplCard');
+  if(!el) return;
+
+  const statusRows=SUPPLEMENTS_DEF.filter(s=>active.includes(s.id)).map(s=>`
+    <div class="supl-status-row">
+      <div class="supl-dot"></div>
+      <div style="flex:1;font-size:12px;font-weight:700">${s.icon} ${s.name}</div>
+      <div style="font-size:10px;color:var(--text2)">${s.benefits[0]} · ${s.timing}</div>
+    </div>`).join('');
+
+  el.innerHTML=`
+    <div class="card-title">SUPLEMENTACIÓ</div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:12px">Toca per activar/desactivar. Els actius apareixen al teu resum nutricional.</div>
+    <div class="supl-grid">
+      ${SUPPLEMENTS_DEF.map(s=>`
+        <div class="supl-item ${active.includes(s.id)?'active':''}" onclick="toggleSupplement('${s.id}')">
+          <div class="supl-icon">${s.icon}</div>
+          <div class="supl-name">${s.name}</div>
+          <div class="supl-desc">${s.desc}</div>
+          <div class="supl-dose">${s.dose}</div>
+        </div>`).join('')}
+    </div>
+    <div style="margin-top:14px">
+      <div class="card-title">ESTAT ACTUAL (${active.length}/${SUPPLEMENTS_DEF.length} actius)</div>
+      ${active.length===0
+        ?`<div style="text-align:center;padding:14px;color:var(--text2);font-size:13px">Cap suplement activat.<br>Selecciona els que prens diàriament.</div>`
+        :`<div style="background:var(--bg3);border-radius:12px;padding:10px 12px">${statusRows}</div>
+          <div style="font-size:11px;color:var(--text2);margin-top:8px;padding:8px 12px;background:#22c55e11;border:1px solid #22c55e33;border-radius:8px">
+            ✅ Prenent <strong>${active.length}</strong> suplements · Recorda: consulta sempre amb un professional sanitari
+          </div>`
+      }
+    `;
+}
+
+// ═══════════════════════════════════════════
 // NAVIGATION
 // ═══════════════════════════════════════════
 function goPage(id,btn){
@@ -931,6 +1378,8 @@ function goPage(id,btn){
   if(id==='training') renderTraining();
   if(id==='stats') renderStats();
   if(id==='perfil') renderPerfil();
+  if(id==='aliments') renderAliments();
+  if(id==='compra') renderCompra();
 }
 
 // ═══════════════════════════════════════════
@@ -1763,6 +2212,7 @@ function renderPerfil(){
   document.getElementById('pPesObj').value=p.pesObjectiu||88;
   _kcalMode=p.kcalMode||'auto';
   setKcalMode(_kcalMode);
+  renderPerfilSupplements();
 }
 
 function updatePerfilCalc(){
@@ -1880,7 +2330,7 @@ document.querySelectorAll('.overlay').forEach(o=>{
 // PWA / SERVICE WORKER
 // ═══════════════════════════════════════════
 const SW_CODE=`
-const CACHE='daniel-runner-v3';
+const CACHE='daniel-runner-v4';
 self.addEventListener('install',e=>{e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['./'])));self.skipWaiting();});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(ks=>Promise.all(ks.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));self.clients.claim();});
 self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).then(res=>{const cl=res.clone();caches.open(CACHE).then(c=>c.put(e.request,cl));return res;}).catch(()=>caches.match('./'))));});
