@@ -120,7 +120,8 @@ nav{
 .cal-day.cursa{background:#ef444422;color:var(--red);border:1.5px solid var(--red)}
 .cal-day.diumenge{background:#3b82f611;color:var(--blue)}
 .cal-day.today{box-shadow:0 0 0 2px var(--green)}
-.cal-day .dot{font-size:7px;line-height:1;margin-top:1px}
+.cal-day .cal-dots{display:flex;gap:1px;flex-wrap:wrap;justify-content:center;margin-top:1px}
+.cal-day .cal-dots span{font-size:8px;line-height:1}
 .cal-legend{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
 .cal-legend-item{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--text2)}
 .cal-legend-dot{width:8px;height:8px;border-radius:2px}
@@ -659,8 +660,11 @@ nav{
     </div>
     <!-- Correr fields -->
     <div id="tFieldsCorrer" style="display:none">
-      <div class="form-row3">
+      <div class="form-row">
+        <div class="form-group"><label>Temps (min)</label><input type="number" class="form-control" id="tCorrerMin" placeholder="45"></div>
         <div class="form-group"><label>Km</label><input type="number" step=".1" class="form-control" id="tKm" placeholder="10"></div>
+      </div>
+      <div class="form-row">
         <div class="form-group"><label>Kcal</label><input type="number" class="form-control" id="tKcalQ" placeholder="650"></div>
         <div class="form-group"><label>Vel. km/h</label><input type="number" step=".1" class="form-control" id="tVel" placeholder="10.5"></div>
       </div>
@@ -2090,11 +2094,12 @@ function renderCalendar(){
     const ds=dateStr(dt);
     const type=getDayType(dt);
     const dow=dt.getDay();
-    // Check training on this day
-    const hasTraining=trainings.some(t=>t.date===ds);
-    let dots='';
-    if(hasTraining) dots+=`<div class="dot">💪</div>`;
-    if(allRaces.some(r=>r.date===ds)) dots+=`<div class="dot">🏅</div>`;
+    // Activity icons for this day (one per unique type)
+    const TICONS={peses:'💪',boxeo:'🥊',correr:'🏃',caminar:'🚶'};
+    const dayTypes=[...new Set(trainings.filter(t=>t.date===ds).map(t=>t.type))];
+    const iconSpans=dayTypes.map(tp=>`<span>${TICONS[tp]||'💪'}</span>`).join('');
+    const raceSpan=allRaces.some(r=>r.date===ds)?'<span>🏅</span>':'';
+    const dots=(iconSpans||raceSpan)?`<div class="cal-dots">${iconSpans}${raceSpan}</div>`:'';
 
     html+=`<div class="cal-day ${type}${ds===todayStr?' today':''}" title="${ds}" onclick="calDayClick('${ds}')">
       ${d}${dots}
@@ -2195,7 +2200,7 @@ function trainingCardHTML(t, showDelete){
   let sub='', kcalStr='';
   if(t.type==='peses'){const k=Math.round((t.duracio||60)*5);sub=`${(t.muscles||[]).map(m=>MUSCLE_LABELS[m]).join(', ')||'—'} · ${t.duracio||60}min · ~${k} kcal`;kcalStr=k+' kcal';}
   if(t.type==='boxeo'){sub=`1h sessió estàndard · ~600 kcal`;kcalStr='600 kcal';}
-  if(t.type==='correr'){sub=`${t.km||0} km · ${t.vel||0} km/h · ${t.kcalQ||0} kcal`;kcalStr=(t.kcalQ||0)+' kcal';}
+  if(t.type==='correr'){const dur=t.duracio?t.duracio+'min · ':'';sub=`${dur}${t.km||0} km · ${t.vel||0} km/h · ${t.kcalQ||0} kcal`;kcalStr=(t.kcalQ||0)+' kcal';}
   if(t.type==='caminar'){const k=calcWalkingKcal(p.pes,t.km||0,t.minutes||0);sub=`${t.km||0} km · ${t.minutes||0} min · ~${k} kcal`;kcalStr=k+' kcal';}
   return `<div class="training-card ${colors[t.type]||''}">
     <div class="training-icon">${icons[t.type]||'💪'}</div>
@@ -2263,6 +2268,7 @@ function openAddTraining(){
   document.getElementById('tData').value=dateStr(today());
   document.getElementById('tNota').value='';
   document.getElementById('tDuracio').value='60';
+  document.getElementById('tCorrerMin').value='';
   document.getElementById('tKm').value='';
   document.getElementById('tKcalQ').value='';
   document.getElementById('tVel').value='';
@@ -2316,6 +2322,7 @@ function saveTraining(){
     t.muscles=Array.from(document.querySelectorAll('#muscleChecks input:checked')).map(cb=>cb.value);
   }
   if(selectedTrainType==='correr'){
+    t.duracio=parseInt(document.getElementById('tCorrerMin').value)||0;
     t.km=parseFloat(document.getElementById('tKm').value)||0;
     t.kcalQ=parseInt(document.getElementById('tKcalQ').value)||0;
     t.vel=parseFloat(document.getElementById('tVel').value)||0;
